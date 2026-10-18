@@ -1,6 +1,25 @@
 """รันเทสต์ตรรกะโดยไม่ต้องโหลดโมเดล:  python test_logic.py"""
 import fitcheck as fc
 
+# mapping จริงที่ใช้ในเว็บ (เก็บไว้เช็คแยก)
+REAL_STYLES = {k: (dict(v) if isinstance(v, dict) else list(v)) for k, v in fc.STYLES.items()}
+REAL_COLORS = {k: (dict(v) if isinstance(v, dict) else list(v)) for k, v in fc.STYLE_COLORS.items()}
+
+# เทสต์ตรรกะใช้ mapping คงที่ชุดนี้ จะได้ไม่พังทุกครั้งที่แก้ STYLES ใน fitcheck.py
+TEST_STYLES = {
+    "Cleangirl":  ["tank-top", "long_pants", "suit_jacket", "short_sleeve_top"],
+    "Formal":     ["suit_jacket", "long_pants", "long_dress", "long_skirt"],
+    "Hyperpop":   ["Tube_top", "mini_skirt", "baby_tee", "mini_pants"],
+    "Softgirl":   ["puff_sleeve_top", "long_skirt", "mini_dress", "baby_tee"],
+    "Streetwear": ["baggy_pants", "short_sleeve_top", "tank-top", "long_sleeve"],
+    "Y2K":        ["low_rise_jeans", "low_rise_pants", "baby_tee", "Tube_top", "mini_skirt"],
+}
+TEST_COLORS = {
+    "Cleangirl": ["cream", "white"], "Formal": ["black", "navy"], "Hyperpop": ["vivid"],
+    "Softgirl": ["pastel", "white"], "Streetwear": ["black", "olive", "denim"], "Y2K": ["pastel", "lightdenim"],
+}
+fc.configure(TEST_STYLES, TEST_COLORS)
+
 
 def det(cls, conf, box=(0.1, 0.1, 0.5, 0.5)):
     return {"cls": cls, "conf": conf, "box": list(box)}
@@ -105,10 +124,27 @@ def test_mixmatch_needs_top_and_bottom():
 def test_style_catalog():
     cat = fc.style_catalog()
     assert set(cat) == set(fc.STYLES)
-    uniq = {s: {i["cls"] for i in items if i["unique"]} for s, items in cat.items()}
-    assert uniq["Softgirl"] == {"puff_sleeve_top", "mini_dress"}
-    assert uniq["Y2K"] == {"low_rise_jeans", "low_rise_pants"}
-    assert uniq["Cleangirl"] == set()
+    # mapping แบบ list = ทุกชิ้นน้ำหนัก 1 ไม่มีชิ้นเอกลักษณ์
+    assert all(i["weight"] == 1 and not i["unique"] for items in cat.values() for i in items)
+    fc.configure({"A": {"tank-top": 3, "long_pants": 1}, "B": {"tank-top": 1, "baggy_pants": 3}}, {"A": ["cream"], "B": ["black"]})
+    try:
+        cat = fc.style_catalog()
+        assert [i["cls"] for i in cat["A"]] == ["tank-top", "long_pants"]     # เรียงน้ำหนักมากก่อน
+        assert cat["A"][0]["unique"] and not cat["A"][1]["unique"]
+    finally:
+        fc.configure(TEST_STYLES, TEST_COLORS)
+
+
+def test_weights_decide():
+    # ชิ้นเดียวกันอยู่ทั้งสองสไตล์ แต่น้ำหนักต่างกัน -> สไตล์ที่ให้ความสำคัญมากกว่าชนะ
+    fc.configure({"A": {"tank-top": 3, "mini_pants": 1}, "B": {"tank-top": 1, "mini_pants": 3}},
+                 {"A": ["cream"], "B": ["cream"]})
+    try:
+        assert fc.score_styles([("tank-top", .9)])["styles"] == ["A"]
+        assert fc.score_styles([("mini_pants", .9)])["styles"] == ["B"]
+        assert set(fc.score_styles([("tank-top", .9), ("mini_pants", .9)])["styles"]) == {"A", "B"}
+    finally:
+        fc.configure(TEST_STYLES, TEST_COLORS)
 
 
 TOP = (0, 0, .5, .4)
@@ -171,6 +207,81 @@ def test_suggest_follows_ref():
 def test_no_suggestions_when_complete():
     r = fc.analyze_closet([[det("baby_tee", .9, TOP), det("mini_skirt", .9, BOT)]])
     assert r["suggestions"] == []
+
+
+CREAM, NEON_PINK, BLACK, PASTEL_PINK, DENIM, WHITE = (232, 220, 196), (255, 40, 170), (20, 20, 24), (248, 190, 214), (96, 128, 170), (250, 250, 250)
+
+
+def test_classify_color():
+    cases = {
+        CREAM: "cream", (210, 190, 160): "cream", WHITE: "white", (128, 128, 128): "grey",
+        BLACK: "black", (35, 45, 85): "navy", (90, 60, 40): "brown", (95, 105, 60): "olive",
+        NEON_PINK: "vivid", (200, 255, 60): "vivid", PASTEL_PINK: "pastel", (200, 190, 240): "pastel",
+        DENIM: "denim", (165, 195, 230): "lightdenim",
+    }
+    for rgb, want in cases.items():
+        assert fc.classify_color(rgb) == want, (rgb, fc.classify_color(rgb), want)
+
+
+def test_color_breaks_tie():
+    # เสื้อกล้าม + กางเกงขาสั้น: ไม่มีสี -> เท่ากัน, มีสี -> สีเป็นตัวตัดสิน
+    fc.configure({"A": ["tank-top", "mini_pants"], "B": ["tank-top", "mini_pants"]},
+                 {"A": ["cream"], "B": ["vivid"]})
+    try:
+        plain = fc.score_styles([("tank-top", .9), ("mini_pants", .9)])
+        assert set(plain["styles"]) == {"A", "B"}
+        cream = fc.score_styles([("tank-top", .9, "cream"), ("mini_pants", .9, "cream")])
+        neon = fc.score_styles([("tank-top", .9, "vivid"), ("mini_pants", .9, "vivid")])
+        assert cream["styles"] == ["A"] and neon["styles"] == ["B"]
+    finally:
+        fc.configure(TEST_STYLES, TEST_COLORS)
+
+
+def test_color_weight_zero_ignores_color():
+    old = fc.COLOR_WEIGHT
+    try:
+        fc.COLOR_WEIGHT = 0
+        a = fc.score_styles([("tank-top", .9, "vivid"), ("long_pants", .9, "vivid")])
+        b = fc.score_styles([("tank-top", .9), ("long_pants", .9)])
+        assert a["scores"] == b["scores"]
+    finally:
+        fc.COLOR_WEIGHT = old
+
+
+def test_rgb_flows_into_outfit():
+    o = fc.analyze_outfit([{"cls": "tank-top", "conf": .9, "box": [0, 0, .5, .4], "rgb": list(NEON_PINK)},
+                           {"cls": "mini_pants", "conf": .9, "box": [0, .5, .5, 1], "rgb": list(NEON_PINK)}], 0)
+    assert all(d["color"]["group"] == "vivid" for d in o["detections"])
+    assert o["detections"][0]["color"]["hex"].startswith("#")
+    assert "Hyperpop" in o["style"]["styles"]
+    mm = fc.mix_and_match([o])
+    assert mm and "color" in mm[0]["items"][0]
+
+
+def test_real_mapping_is_valid():
+    fc.configure(REAL_STYLES, REAL_COLORS)
+    try:
+        assert fc.check_mapping() == [], fc.check_mapping()
+        for st, items in REAL_STYLES.items():
+            cats = {fc.CATEGORY[c] for c in items if c in fc.CATEGORY}
+            assert "one_piece" in cats or {"top", "bottom"} <= cats, f"{st} ต้องมีท่อนบน+ล่าง หรือเดรส"
+    finally:
+        fc.configure(TEST_STYLES, TEST_COLORS)
+
+
+def test_style_override_and_manual_piece():
+    r = fc.analyze_closet([[{"cls": "baggy_pants", "conf": 1, "box": [0, 0, 1, 1], "manual": True}], []],
+                          style_overrides={"1": "Y2K"})
+    assert r["outfits"][0]["detections"][0]["manual"] is True
+    assert r["outfits"][1]["style"]["styles"] == ["Y2K"] and r["outfits"][1]["style"]["manual"]
+    assert fc.analyze_outfit([], 0, "", "ไม่มีสไตล์นี้")["style"]["styles"] == []     # สไตล์ไม่รู้จัก ไม่เอา
+
+
+def test_manual_ref_style_used_as_target():
+    r = fc.analyze_closet([[det("baby_tee", .9, TOP), det("mini_skirt", .9, BOT)]], ref_raw=[],
+                          style_overrides={"ref": "Softgirl"})
+    assert r["target"]["label"] == "Softgirl" and r["target_note"] is None
+    assert r["target"]["scores"]["Softgirl"] == 100.0 and "match" in r["mixmatch"][0]
 
 
 if __name__ == "__main__":

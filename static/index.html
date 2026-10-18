@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>fit check · AI จัดลุคจากรูปเสื้อผ้า</title>
-<meta name="description" content="ใส่รูปชุดหรือเสื้อผ้าของคุณ AI จะบอกว่าเป็นสไตล์ไหน แล้วจัดอันดับชุดที่เข้ากันที่สุดให้">
+<title>fit check · Dobby จัดลุคจากรูปเสื้อผ้า</title>
+<meta name="description" content="ใส่รูปชุดหรือเสื้อผ้าของคุณ Dobby จะบอกว่าเป็นสไตล์ไหน แล้วจัดอันดับชุดที่เข้ากันที่สุดให้">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;500;600&family=Unbounded:wght@600;800&display=swap" rel="stylesheet">
@@ -261,7 +261,7 @@ dialog.closet::backdrop { background: rgba(23, 20, 43, .55); }
 .look { margin: 0; display: grid; place-items: center; background: var(--paper); border-radius: 12px; padding: 12px 8px; }
 .look canvas { display: block; width: auto; height: auto; max-width: 150px; max-height: 360px; }
 .parts { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 3px; font-size: .86rem; }
-.parts li span { display: block; color: var(--muted); font-size: .78rem; line-height: 1.3; }
+.parts li > span { display: block; color: var(--muted); font-size: .78rem; line-height: 1.3; }
 .parts li { line-height: 1.35; }
 .outer-thumb { display: flex; align-items: center; gap: 10px; margin-top: 8px; font-size: .85rem; color: var(--muted); }
 .outer-thumb canvas { display: block; height: 56px; width: auto; border-radius: 8px; border: 2px solid var(--ink); }
@@ -278,6 +278,17 @@ dialog.closet::backdrop { background: rgba(23, 20, 43, .55); }
 .verdict .score span { font-weight: 600; font-size: .92rem; }
 .meter { height: 8px; background: var(--paper); border-radius: 99px; overflow: hidden; }
 .meter i { display: block; height: 100%; background: var(--blue); border-radius: 99px; }
+.fixbtn { display: block; margin-top: 14px; font: 600 .9rem var(--body); color: var(--blue); background: none; border: 0; padding: 4px 0; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.fixbtn[aria-expanded="true"] { color: var(--ink); }
+.editor { margin-top: 10px; padding: 14px; border: 2px dashed var(--blue); border-radius: 14px; background: var(--paper); }
+.edit-title { margin: 0 0 10px; font-weight: 600; font-size: .92rem; }
+.edit-row { display: flex; flex-direction: column; align-items: stretch; gap: 4px; margin: 0 0 10px; }
+.edit-label { font-size: .8rem; color: var(--muted); }
+.edit-row select { width: 100%; min-width: 0; font: 500 .9rem var(--body); padding: 6px 8px; border: 2px solid var(--ink); border-radius: 10px; background: var(--card); color: var(--ink); }
+.edit-actions { display: flex; align-items: center; gap: 14px; margin-top: 12px; }
+.go.small { padding: 8px 18px; font-size: .92rem; }
+.edit-status { margin: 8px 0 0; font-size: .85rem; color: var(--muted); }
+.manual-note { margin: 8px 0 0; font-size: .85rem; color: var(--blue); font-weight: 600; }
 .note { padding: 22px; border: 2px dashed var(--muted); border-radius: 18px; color: var(--muted); }
 
 /* ---------- style stories (editorial) ---------- */
@@ -323,6 +334,13 @@ dialog.closet::backdrop { background: rgba(23, 20, 43, .55); }
 .story .pieces li { font-size: .9rem; border: 2px solid var(--ink); border-radius: 999px; padding: 3px 12px; background: var(--card); }
 .story .pieces li.sig { background: var(--ink); color: #fff; font-weight: 600; }
 .story .recipe { margin: 0 0 24px; font-size: 1rem; }
+.story .tones { list-style: none; display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 20px; padding: 0; }
+.story .tones li { display: inline-flex; align-items: center; gap: 8px; font-size: .9rem; border: 2px solid var(--ink); border-radius: 999px; padding: 3px 12px 3px 5px; background: var(--card); }
+.swatches { display: inline-flex; }
+.swatches i { width: 16px; height: 16px; border-radius: 50%; border: 1.5px solid var(--ink); margin-left: -5px; }
+.swatches i:first-child { margin-left: 0; }
+.tone { white-space: nowrap; }
+.sw { display: inline-block; width: 12px; height: 12px; border-radius: 50%; border: 1.5px solid var(--ink); vertical-align: -1px; margin: 0 4px 0 6px; }
 .legend { max-width: 1160px; margin: 40px auto 0; padding: 0 20px; color: var(--muted); font-size: .92rem; }
 .legend .sig { background: var(--ink); color: #fff; border-radius: 999px; padding: 1px 10px; font-weight: 600; font-size: .85rem; margin-right: 6px; }
 
@@ -345,6 +363,7 @@ dialog.closet::backdrop { background: rgba(23, 20, 43, .55); }
 /* ---------- footer ---------- */
 footer { margin-top: 110px; background: var(--ink); color: #fff; padding: 48px 0 56px; }
 footer .big { font: 800 clamp(2.4rem, 11vw, 6.5rem)/.9 var(--display); letter-spacing: -0.05em; text-transform: uppercase; margin: 0 0 22px; color: var(--lime); }
+footer .quote { font-size: 1.25rem; font-weight: 600; color: #fff; margin-bottom: 10px; }
 footer p { margin: 0 0 6px; color: #C9C5E3; max-width: 44em; font-size: .92rem; }
 
 @media (max-width: 860px) {
@@ -377,11 +396,11 @@ footer p { margin: 0 0 6px; color: #C9C5E3; max-width: 44em; font-size: .92rem; 
 
 <nav class="top" aria-label="เมนูหลัก">
   <div class="wrap">
-    <a class="logo" href="#top">fit check<i>AI</i></a>
+    <a class="logo" href="#top">fit check</a>
     <div class="links">
       <a href="#try">ลองเลย</a>
       <a href="#styles">สไตล์</a>
-      <a href="#ai">AI ของเรา</a>
+      <a href="#ai">Dobby ของเรา</a>
     </div>
   </div>
 </nav>
@@ -389,9 +408,9 @@ footer p { margin: 0 0 6px; color: #C9C5E3; max-width: 44em; font-size: .92rem; 
 <section class="hero" id="top">
   <div class="wrap hero-grid">
     <div>
-      <p class="kicker">AI จัดลุคจากรูปเสื้อผ้าของคุณ</p>
+      <p class="kicker">Dobby จัดลุคจากรูปเสื้อผ้าของคุณ</p>
       <h1><span>Fit</span><span class="outline">Check</span></h1>
-      <p class="lead">ถ่ายรูปชุดหรือเสื้อผ้าที่มี แล้วให้ AI บอกว่าเป็นสไตล์ไหน พร้อมลองจับคู่ทุกชิ้นให้เป็นลุคที่เข้ากันที่สุด</p>
+      <p class="lead">ถ่ายรูปชุดหรือเสื้อผ้าที่มี แล้วให้ Dobby บอกว่าเป็นสไตล์ไหน พร้อมลองจับคู่ทุกชิ้นให้เป็นลุคที่เข้ากันที่สุด</p>
       <div class="cta-row">
         <a class="go" href="#try">ลองเลย</a>
         <a class="ghost" href="#styles">ดู 6 สไตล์</a>
@@ -405,7 +424,7 @@ footer p { margin: 0 0 6px; color: #C9C5E3; max-width: 44em; font-size: .92rem; 
 
 <main>
   <section class="tool wrap" id="try" aria-labelledby="tryTitle">
-    <h2 id="tryTitle">ใส่รูปแล้วให้ AI จัดให้</h2>
+    <h2 id="tryTitle">ใส่รูปแล้วให้ Dobby จัดให้</h2>
     <p class="sub">จะเป็นรูปชุดที่ใส่ หรือถ่ายเสื้อผ้าทีละชิ้นก็ได้ รูปจะถูกเก็บในตู้เสื้อผ้าบนเครื่องนี้ ครั้งหน้าไม่ต้องถ่ายใหม่</p>
 
     <div class="round-bar">
@@ -418,14 +437,14 @@ footer p { margin: 0 0 6px; color: #C9C5E3; max-width: 44em; font-size: .92rem; 
 
     <fieldset class="refbox">
       <legend>มีเรฟไหม?</legend>
-      <p class="hint">ไม่มีก็ไม่เป็นไร AI จะเลือกชุดที่เข้ากันที่สุดให้ ถ้ามี AI จะจัดให้ใกล้เรฟที่สุดและบอกว่าควรหาชิ้นไหนเพิ่ม</p>
+      <p class="hint">ไม่มีก็ไม่เป็นไร Dobby จะเลือกชุดที่เข้ากันที่สุดให้ ถ้ามี Dobby จะจัดให้ใกล้เรฟที่สุดและบอกว่าควรหาชิ้นไหนเพิ่ม</p>
       <div class="seg" id="refMode">
-        <label><input type="radio" name="refmode" value="none" checked><span>ไม่มี ให้ AI เลือก</span></label>
+        <label><input type="radio" name="refmode" value="none" checked><span>ไม่มี ให้ Dobby เลือก</span></label>
         <label><input type="radio" name="refmode" value="photo"><span>มีรูปเรฟ</span></label>
       </div>
       <div class="refpane" id="refPhoto" hidden>
         <div class="refdrop" id="refDrop"></div>
-        <p class="hint">ใช้รูปลุคที่อยากได้ จะเป็นรูปจาก Pinterest หรือรูปคนอื่นก็ได้ AI ดูแค่ว่าในรูปมีชิ้นอะไร</p>
+        <p class="hint">ใช้รูปลุคที่อยากได้ จะเป็นรูปจาก Pinterest หรือรูปคนอื่นก็ได้ Dobby ดูแค่ว่าในรูปมีชิ้นอะไร</p>
       </div>
     </fieldset>
 
@@ -449,44 +468,44 @@ footer p { margin: 0 0 6px; color: #C9C5E3; max-width: 44em; font-size: .92rem; 
 
   <section class="styles" id="styles" aria-labelledby="stylesTitle">
     <div class="wrap">
-      <h2 id="stylesTitle">6 สไตล์ที่ AI รู้จัก</h2>
+      <h2 id="stylesTitle">6 สไตล์ที่ Dobby รู้จัก</h2>
       <p class="sub">แต่ละสไตล์มีชิ้นเด่นของตัวเอง เลือกดูสไตล์ที่ชอบ แล้วลองใช้เป็นสูตรแต่งตัวได้เลย</p>
       <ul class="tiles" id="styleTiles" aria-label="เลือกสไตล์"></ul>
     </div>
     <div id="styleStories"></div>
-    <p class="legend"><span class="sig">★ ชิ้นเอกลักษณ์</span>อยู่ในสไตล์นี้สไตล์เดียว AI จึงให้น้ำหนักมากกว่าชิ้นที่ใช้ร่วมกับสไตล์อื่น</p>
+    <p class="legend"><span class="sig">★ ไอเทมโดดเด่นประจำสไตล์</span></p>
   </section>
 
   <section class="ai wrap" id="ai" aria-labelledby="aiTitle">
-    <h2 id="aiTitle">ทำไมต้อง AI ของเรา</h2>
+    <h2 id="aiTitle">ทำไมต้อง Dobby</h2>
     <p class="sub">ไม่ใช่แค่ทายสไตล์ แต่บอกได้ว่าเห็นอะไร คิดยังไง และจัดชุดใหม่จากของที่มีให้</p>
 
     <ol class="steps" aria-label="ขั้นตอนการทำงาน">
       <li>ใส่รูป</li>
-      <li>AI ตรวจชิ้นเสื้อผ้า</li>
+      <li>Dobby ตรวจชิ้นเสื้อผ้า</li>
       <li>ได้สไตล์ + ชุดที่เข้ากัน</li>
     </ol>
 
     <div class="reasons">
       <article class="reason">
         <p class="no">01</p>
-        <h3>ตรวจละเอียดถึง 16 ชิ้น</h3>
-        <p>โมเดลที่เทรนเอง แยกได้ว่าเป็นเบบี้ที เกาะอก ยีนส์เอวต่ำ หรือกระโปรงสั้น ไม่ใช่แค่ "เสื้อ" กับ "กางเกง" จึงแยกสไตล์ได้คมกว่า</p>
+        <h3>ดูทั้งทรงและสี</h3>
+        <p>ใส่ใจรายละเอียดเล็กๆ Dobby แยกได้ว่าเป็นเบบี้ที เกาะอก ยีนส์เอวต่ำ หรือกระโปรงสั้น ไม่ใช่แค่ "เสื้อ" กับ "กางเกง" จึงแยกสไตล์ได้ชัดเจนกว่า</p>
       </article>
       <article class="reason">
         <p class="no">02</p>
         <h3>เห็นเหตุผลทุกครั้ง</h3>
-        <p>กรอบบนรูปบอกว่าเจอชิ้นไหน มั่นใจกี่เปอร์เซ็นต์ และคะแนนสไตล์คำนวณจากชิ้นเหล่านั้นโดยตรง ไม่ใช่กล่องดำที่ตอบมาลอย ๆ</p>
+        <p>วิเคราะห์อย่างมีเหตุผล แสดงเปอร์เซ็นต์ความมั่นใจและคะแนนสไตล์นั้น โดยคำนวณจากเสื้อผ้าเหล่านั้นโดยตรง ไม่ใช่กล่องดำที่ตอบมาลอย ๆ</p>
       </article>
       <article class="reason">
         <p class="no">03</p>
         <h3>รู้ว่าลุคนี้ผสม</h3>
-        <p>ถ้าสองสไตล์คะแนนสูสีกัน (ห่างน้อยกว่า 10%) AI จะบอกว่าเป็นลุคผสม เช่น Hyperpop × Y2K แทนที่จะเลือกมั่วอย่างเดียว</p>
+        <p>ตรวจจับสไตล์ ถ้าสองสไตล์คะแนนสูสีกัน (ห่างน้อยกว่า 10%) AI จะบอกว่าเป็นลุคผสม เช่น Hyperpop × Y2K แทนที่จะเลือกมั่วอย่างเดียว</p>
       </article>
       <article class="reason">
         <p class="no">04</p>
         <h3>จัดชุดใหม่จากของที่มี</h3>
-        <p>รวมทุกชิ้นจากทุกรูปเป็นตู้เสื้อผ้า ลองจับคู่ทุกแบบ แล้วจัดอันดับชุดที่เข้ากันที่สุดให้ พร้อมภาพชิ้นที่ใช้</p>
+        <p>mix & match รวมทุกชิ้นจากทุกรูปเป็นตู้เสื้อผ้า ลองจับคู่ทุกแบบ แล้วจัดอันดับชุดที่เข้ากันที่สุดให้ พร้อมแสดงภาพชุดที่จับคู่</p>
       </article>
     </div>
     <p class="privacy">รูปที่อัปโหลดถูกประมวลผลในหน่วยความจำและไม่ถูกบันทึกบนเซิร์ฟเวอร์ ตู้เสื้อผ้าเก็บอยู่ในเบราว์เซอร์ของคุณเท่านั้น ลบได้ทุกเมื่อ</p>
@@ -512,8 +531,8 @@ footer p { margin: 0 0 6px; color: #C9C5E3; max-width: 44em; font-size: .92rem; 
 <footer>
   <div class="wrap">
     <p class="big">Fit<br>Check</p>
-    <p>ผลที่ได้เป็นการประเมินจาก AI จากชิ้นเสื้อผ้าที่ตรวจเจอในรูป ใช้เป็นไอเดียแต่งตัว ไม่ใช่คำตัดสินว่าใครแต่งถูกหรือผิด</p>
-    <p>AI วิเคราะห์เฉพาะเสื้อผ้า ไม่ประเมินรูปร่างหรือหน้าตา</p>
+    <p class="quote">“จุดประกายสไตล์ใหม่ เติมเต็มความมั่นใจให้ทุกคน”</p>
+    <p>Dobby จะนำเสนอแนวทางการแมตช์ชุดจากชิ้นแฟชั่นที่คุณเลือก เพื่อสร้างสรรค์ลุคโดดเด่นในแบบของคุณเอง</p>
   </div>
 </footer>
 
@@ -527,45 +546,66 @@ const TH = {
   low_rise_jeans: "ยีนส์เอวต่ำ", low_rise_pants: "กางเกงเอวต่ำ", mini_pants: "กางเกงขาสั้น", mini_skirt: "กระโปรงสั้น",
   long_dress: "เดรสยาว", mini_dress: "เดรสสั้น", suit_jacket: "เสื้อสูท"
 };
-const CAT_TH = { top: "ท่อนบน", bottom: "ท่อนล่าง", one_piece: "ชุดชิ้นเดียว", outer: "เสื้อคลุม" };
+// ตัวอย่างสีของแต่ละโทน (ใช้แสดงผลเท่านั้น ตัวตัดสินจริงอยู่ใน fitcheck.py)
+const TONE_SWATCH = {
+  white:      ["#FFFFFF"],
+  cream:      ["#EDE3CF", "#D2BE9C"],
+  grey:       ["#B9B7B4", "#8A8885"],
+  black:      ["#17142B"],
+  brown:      ["#6B4A35"],
+  navy:       ["#26345A"],
+  olive:      ["#5F693C"],
+  pastel:     ["#F8BED6", "#C9BEF2", "#BFE3F2"],
+  vivid:      ["#FF28AA", "#C8FF3C", "#3A2BFF"],
+  denim:      ["#5E7FAE"],
+  lightdenim: ["#A3C4FF"],
+};
+const toneDot = (c) => c ? [" ", el("span", { class: "tone" }, el("span", { class: "sw", style: `background:${c.hex}`, "aria-hidden": "true" }), c.label)] : [];
+const CAT_TH = { top: "เสื้อ", bottom: "กางเกง & กระโปรง", one_piece: "เดรส", outer: "เสื้อคลุม" };
+const CAT_PLAIN = { top: "เสื้อ", bottom: "กางเกง & กระโปรง", one_piece: "เดรส", outer: "เสื้อคลุม" };
+const CAT_SENT = { top: "เสื้อ", bottom: "กางเกงหรือกระโปรง", one_piece: "เดรส", outer: "เสื้อคลุม" };
 
 // หน้าตา/คำอธิบายของแต่ละสไตล์ (รายชื่อชิ้นมาจาก /api/styles ซึ่งตรงกับ STYLES ใน fitcheck.py)
 const STYLE_META = {
   Cleangirl:  { bg: "#DFE8D0", fg: "#17142B", r: "-4deg", fs: "1.7rem", th: "คลีนเกิร์ล",
-    tag: "เรียบ สะอาด ดูแพงแบบไม่ต้องพยายาม",
-    about: "ลุคที่ดูเหมือนไม่ได้ตั้งใจแต่งแต่ดูดีทุกมุม เน้นสีกลาง ๆ อย่างขาว ครีม เบจ ชิ้นน้อยแต่ทรงสวย ใส่แล้วดูสะอาดสะอ้าน เหมาะกับทุกวัน",
-    recipe: "เสื้อกล้ามหรือเสื้อแขนสั้น + กางเกงขายาว แล้วคลุมสูทเบา ๆ",
-    art: [{ cls: "tank-top", c: "#FFFFFF" }, { cls: "long_pants", c: "#D9C7A6" }, { cls: "suit_jacket", c: "#B5A586", side: true }] },
+    tag: "ละมุน สวยสะอาดตา เรียบง่ายไร้เลเยอร์",
+    about: "เสน่ห์ความสวยสะอาดตาและละมุนสายตา เน้นเสื้อผ้าน้อยชิ้นเรียบง่ายไร้เลเยอร์ ในโทนสีมินิมอลโดยเน้นสีขาวเป็นหลัก ผสมผสานสีเทา พาสเทล และดำอย่างลงตัว เผยเสน่ห์ความเรียบง่ายที่สดชื่น สะอาด และเป็นธรรมชาติ",
+    recipe: "เสื้อกล้าม เกาะอก หรือเสื้อแขนสั้นรัดรูป + กางเกงเอวต่ำหรือกางเกงยีนส์เอวต่ำ",
+    featured: ["เสื้อกล้าม", "เกาะอก", "กางเกงเอวต่ำ", "กางเกงยีนส์เอวต่ำ", "กระโปรงสั้น", "กางเกงขาสั้น"],
+    art: [{ cls: "tank-top", c: "#FFFFFF" }, { cls: "long_pants", c: "#D9C7A6" }] },
   Formal:     { bg: "#17142B", fg: "#FFFFFF", r: "3deg", fs: "1.3rem", th: "ฟอร์มอล",
-    tag: "เป็นทางการ เรียบร้อย พร้อมเข้าประชุม",
-    about: "แต่งให้ดูน่าเชื่อถือ ทรงชัด ผ้าอยู่ตัว สูทกับกางเกงขายาวคือคู่หลัก ถ้าอยากให้หวานขึ้นก็เปลี่ยนเป็นเดรสยาวหรือกระโปรงยาว เหมาะกับวันทำงาน สัมภาษณ์งาน หรืองานพิธี",
-    recipe: "สูท + กางเกงขายาว หรือจะเป็นเดรสยาว / กระโปรงยาวก็ได้",
+    tag: "เป็นทางการ สุภาพ เหมาะกับทุกโอกาส",
+    about: "เสริมสร้างบุคลิกภาพที่น่าเชื่อถือด้วยการจับคู่เสื้อสูทและกางเกงขายาว ดูเป็นทางการ เพิ่มความนุ่มนวลด้วยการปรับเปลี่ยนเป็นชุดเดรสหรือกระโปรงได้",
+    recipe: "คอมพลีทลุคทางการด้วยการจับคู่สูทและกางเกงขายาว หรือเสริมความสง่างามด้วยชุดเดรสและกระโปรงยาว",
+    featured: ["เสื้อสูท", "กางเกงขายาว", "เดรสยาว", "กระโปรงยาว"],
     art: [{ cls: "suit_jacket", c: "#ECE5D3" }, { cls: "long_pants", c: "#ECE5D3" }] },
   Hyperpop:   { bg: "#FF5BAA", fg: "#17142B", r: "-2deg", fs: "2rem", th: "ไฮเปอร์ป๊อป",
-    tag: "จัดจ้าน ชิ้นเล็ก สีสันกล้า",
-    about: "สนุก สีจัด เล่นใหญ่ ใช้ชิ้นเล็กอย่างเบบี้ทีหรือเกาะอก จับคู่กับกระโปรงสั้นหรือกางเกงขาสั้น ยิ่งสีตัดกันยิ่งดี ไม่ต้องกลัวว่าจะเยอะเกิน",
-    recipe: "เบบี้ทีหรือเกาะอก + กระโปรงสั้นหรือกางเกงขาสั้น เล่นของชิ้นเล็กให้สุด",
+    tag: "โดดเด่น สนุกสนาน กล้าแมตช์สีสันสุดป๊อป",
+    about: "ปลดปล่อยความสนุกผ่านแฟชั่นสีสันจัดจ้านและสไตล์ที่ไร้ขีดจำกัด เน้นการจับคู่ไอเทมชิ้นกะทัดรัดอย่างเสื้อเบบี้ที เข้ากับกระโปรงหรือกางเกง สร้างความโดดเด่นด้วยสีสันที่ตัดกัน (Color Blocking) สไตล์นี้ไม่มีคำว่า “เยอะเกินไป” มีแต่คำว่า “มั่นใจเต็มร้อย”",
+    recipe: "เสื้อเบบี้ทีพิมพ์ลายสีสดใส + กางเกงสีสันตัดกันให้ป๊อป เสริมด้วยแจ็คเก็ตแบบมีเลเยอร์",
+    featured: ["แจ็คเก็ตเมทัลลิก", "เบบี้ที", "กางเกงคาร์โก้"],
     art: [{ cls: "baby_tee", c: "#CFFF3D" }, { cls: "mini_skirt", c: "#3A2BFF" }] },
   Softgirl:   { bg: "#D9CCFF", fg: "#17142B", r: "4deg", fs: "1.5rem", th: "ซอฟต์เกิร์ล",
-    tag: "หวาน นุ่ม ละมุน",
-    about: "โทนพาสเทล ผ้าพลิ้ว รายละเอียดหวาน ๆ อย่างแขนตุ๊กตา โบว์ หรือลูกไม้ ใส่แล้วดูอ่อนโยน เหมาะกับวันเดินคาเฟ่หรือวันที่อยากถ่ายรูปสวย ๆ",
-    recipe: "เสื้อแขนตุ๊กตา + กระโปรงยาว หรือเดรสสั้นเบา ๆ",
+    tag: "น่ารักสดใส อ่อนหวาน น่าทะนุถนอม",
+    about: "ความหวานที่สนุกสนานและมีชีวิตชีวาในโทนสีพาสเทล เหมาะสำหรับวันสบาย ๆ หรือไปคาเฟ่",
+    recipe: "เสื้อแขนตุ๊กตา + กระโปรงยาว หรือเดรสยาว",
+    featured: ["เสื้อแขนตุ๊กตา", "กระโปรงยาว", "กระโปรงสั้น", "เดรสสั้น", "เดรสยาว", "กางเกงขาสั้น", "กางเกงขายาว"],
     art: [{ cls: "puff_sleeve_top", c: "#FFFFFF" }, { cls: "long_skirt", c: "#FFB3CF" }] },
   Streetwear: { bg: "#FF7A2F", fg: "#17142B", r: "-3deg", fs: "1.8rem", th: "สตรีทแวร์",
     tag: "ทรงหลวม สบาย สายสตรีท",
     about: "ใส่สบาย ทรงใหญ่ ได้แรงบันดาลใจจากวัฒนธรรมสเกตบอร์ดและฮิปฮอป เสื้อเรียบ ๆ หรือมีกราฟิก กางเกงทรงหลวม ปิดท้ายด้วยรองเท้าผ้าใบคู่โปรด",
-    recipe: "กางเกงทรงหลวม + เสื้อแขนสั้น เสื้อกล้าม หรือเสื้อแขนยาว",
+    recipe: "เสื้อยืดหรือเสื้อแขนยาว + กางเกงทรงหลวม ในโทนดำ เขียวขี้ม้า เทา ขาว หรือยีนส์",
     art: [{ cls: "short_sleeve_top", c: "#FFFFFF" }, { cls: "baggy_pants", c: "#34343F" }] },
   Y2K:        { bg: "#3A2BFF", fg: "#FFFFFF", r: "2deg", fs: "2.2rem", th: "วายทูเค",
     tag: "เอวต่ำ ชิ้นสั้น กลิ่นอายยุค 2000",
     about: "ย้อนกลับไปต้นยุค 2000 เอวต่ำ เสื้อครอป สีสดใส ยีนส์สีอ่อนคือหัวใจของลุค เติมกิ๊บติดผม แว่นกันแดดทรงเล็ก และกระเป๋าใบจิ๋ว",
-    recipe: "ยีนส์หรือกางเกงเอวต่ำ + เบบี้ที เกาะอก หรือกระโปรงสั้น",
+    recipe: "เบบี้ทีหรือเกาะอกสีพาสเทล + ยีนส์สีอ่อนหรือกางเกงเอวต่ำ",
     art: [{ cls: "baby_tee", c: "#FF9FD0" }, { cls: "low_rise_jeans", c: "#A3C4FF" }] }
 };
 const TAGLINE = Object.fromEntries(Object.entries(STYLE_META).map(([k, v]) => [k, v.tag]));
 
 const $ = (s) => document.querySelector(s);
-const state = { items: [], ref: null, refMode: "none" };   // items/ref: { file, url }
+const state = { items: [], ref: null, refMode: "none", last: null };   // items/ref: { file, url }
 
 function el(tag, props = {}, ...kids) {
   const n = document.createElement(tag);
@@ -674,6 +714,19 @@ function artBox(name, photos, label) {
   return box;
 }
 
+// ไอเทมที่แสดงในบล็อกสไตล์: ใช้รายการใน STYLE_META.featured ถ้ามี (ข้อความล้วน ใส่ชิ้นที่โมเดลไม่รู้จักได้)
+// ไม่มีก็ใช้ชิ้นจาก mapping  ★ = ชิ้นที่น้ำหนักสูงสุด (เอกลักษณ์) ใน fitcheck.py
+const TH_TO_CLS = { ...Object.fromEntries(Object.entries(TH).map(([k, v]) => [v, k])), "กางเกงยีนส์เอวต่ำ": "low_rise_jeans" };
+function featuredChips(name, m, items) {
+  const sig = new Set(items.filter((it) => it.unique).map((it) => it.cls));
+  const list = m.featured ? m.featured.map((label) => ({ label, cls: TH_TO_CLS[label] }))
+                          : items.map((it) => ({ label: TH[it.cls] || it.cls, cls: it.cls }));
+  return list.map((x) => {
+    const star = x.cls && sig.has(x.cls);
+    return el("li", { class: star ? "sig" : "" }, (star ? "★ " : "") + x.label);
+  });
+}
+
 async function loadStyles() {
   const tiles = $("#styleTiles"), stories = $("#styleStories");
   let data, photos = {};
@@ -689,7 +742,6 @@ async function loadStyles() {
     const res = await fetch("/api/style-images");
     if (res.ok) photos = await res.json();
   } catch {}
-
   Object.entries(data).forEach(([name, items]) => {
     const m = STYLE_META[name] || { bg: "#fff", fg: "#17142B", tag: "", about: "", recipe: "", th: "", art: [] };
     const pics = photos[name] || [];
@@ -711,9 +763,8 @@ async function loadStyles() {
         el("h3", { id: "st-" + name }, name),
         el("p", { class: "story-tag" }, m.tag),
         el("p", { class: "story-about" }, m.about),
-        el("h4", {}, "ชิ้นหลักที่ AI มองหา"),
-        el("ul", { class: "pieces", "aria-label": `ชิ้นหลักของ ${name}` },
-          items.map((it) => el("li", { class: it.unique ? "sig" : "" }, (it.unique ? "★ " : "") + (TH[it.cls] || it.cls)))),
+        el("h4", {}, "ชิ้นหลักที่ Dobby มองหา"),
+        el("ul", { class: "pieces", "aria-label": `ชิ้นหลักของ ${name}` }, featuredChips(name, m, items)),
         m.recipe && el("h4", {}, "ลองแต่งแบบนี้"),
         m.recipe && el("p", { class: "recipe" }, m.recipe),
         el("a", { class: "go", href: "#try" }, `เช็คว่าชุดของฉันเป็น ${name} ไหม`))));
@@ -785,7 +836,7 @@ async function addFiles(list) {
   const files = [...list].filter((f) => f.type.startsWith("image/"));
   if (!files.length) return;
   const save = $("#saveToggle").checked && closetDB.ok;
-  let full = 0, notSaved = 0;
+  let full = 0, notSaved = 0, added = 0;
   for (const f of files) {
     if (selectedItems().length >= MAX_FILES) { full++; continue; }
     const blob = await shrink(f);
@@ -793,7 +844,7 @@ async function addFiles(list) {
       id: (crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random())),
       blob, url: URL.createObjectURL(blob), added: Date.now(), saved: false, selected: true,
     };
-    state.items.unshift(it);
+    state.items.splice(added++, 0, it);          // ใส่ไว้หน้าสุด แต่คงลำดับตามที่เลือกมา
     if (save && savedItems().length < CLOSET_MAX) {
       try { await dbPut({ id: it.id, blob: it.blob, added: it.added }); it.saved = true; }
       catch { notSaved++; }
@@ -944,7 +995,7 @@ function renderRef() {
       el("img", { src: state.ref.url, alt: "รูปเรฟ" }),
       el("span", { class: "n" }, "เรฟ"),
       el("button", { type: "button", "aria-label": "ลบรูปเรฟ", onclick: () => setRef(null) }, "×")));
-    box.append(el("p", { class: "hint" }, "AI จะจัดชุดจากเสื้อผ้าของคุณให้ใกล้ลุคนี้ที่สุด"));
+    box.append(el("p", { class: "hint" }, "Dobby จะจัดชุดจากเสื้อผ้าของคุณให้ใกล้ลุคนี้ที่สุด"));
   } else {
     const input = el("input", { type: "file", accept: "image/*", "aria-label": "เลือกรูปเรฟ",
       onchange: (e) => { const f = e.target.files[0]; if (f && f.type.startsWith("image/")) setRef(f); } });
@@ -976,7 +1027,7 @@ async function analyze() {
     const picked = selectedItems();
     picked.forEach((it, i) => fd.append("files", it.blob, `photo-${i + 1}.jpg`));
     if (state.refMode === "photo") {
-      if (!state.ref) throw new Error("ใส่รูปเรฟก่อน หรือเลือก \"ไม่มี ให้ AI เลือก\"");
+      if (!state.ref) throw new Error("ใส่รูปเรฟก่อน หรือเลือก \"ไม่มี ให้ Dobby เลือก\"");
       fd.append("ref", state.ref.file, state.ref.file.name);
     }
     const conf = $("#conf").value;
@@ -988,7 +1039,13 @@ async function analyze() {
     }
     const data = await res.json();
     const imgs = await Promise.all(picked.map((it) => loadImg(it.url)));
-    const refImg = data.target && data.target.detections && state.ref ? await loadImg(state.ref.url) : null;
+    const refImg = data.ref && state.ref ? await loadImg(state.ref.url) : null;
+    state.last = {
+      raws: data.outfits.map((o) => o.detections.map(toRaw)),
+      refRaw: data.ref ? data.ref.detections.map(toRaw) : null,
+      names: picked.map((_, i) => `photo-${i + 1}.jpg`),
+      styles: {}, imgs, refImg,
+    };
     renderResults(data, imgs, refImg);
     $("#results").scrollIntoView({ behavior: "smooth", block: "start" });
   } catch (err) {
@@ -1015,10 +1072,13 @@ function renderResults(data, imgs, refImg) {
   root.replaceChildren();
   const t = data.target;
 
-  if (data.target_note) root.append(el("div", { class: "error" }, data.target_note));
+  if (data.target_note) root.append(el("div", { class: "error", style: "margin-bottom:24px" }, data.target_note));
   if (t) {
     root.append(el("h3", { class: "part" }, "เรฟของคุณ"));
-    root.append(targetBlock(t, refImg));
+    root.append(targetBlock(t, refImg, data.ref));
+  } else if (data.ref && refImg) {                      // เรฟที่ Dobby หาอะไรไม่เจอ: แสดงไว้ให้แก้เอง
+    root.append(el("h3", { class: "part" }, "เรฟของคุณ"));
+    root.append(el("div", { class: "target" }, outfitCard(data.ref, "ref", refImg)));
   }
 
   root.append(el("h3", { class: "part" }, "ที่ตรวจเจอในแต่ละรูป"));
@@ -1039,50 +1099,151 @@ function renderResults(data, imgs, refImg) {
   }
 }
 
-function outfitCard(o, i, img) {
-  const shot = el("figure", { class: "shot" }, el("img", { src: img.src, alt: `รูปที่ ${i + 1} พร้อมกรอบที่ตรวจเจอ` }));
-  for (const d of o.detections) {
-    const [x1, y1, x2, y2] = d.box;
-    shot.append(el("div", {
-      class: "box", "data-cat": d.category,
-      style: `left:${x1 * 100}%;top:${y1 * 100}%;width:${(x2 - x1) * 100}%;height:${(y2 - y1) * 100}%`
-    }, el("span", {}, `${TH[d.cls] || d.cls} ${pct(d.conf)}`)));
-  }
-  if (!o.detections.length) shot.append(el("div", { class: "empty-shot" }, "ไม่พบเสื้อผ้าในรูปนี้ ลองถ่ายให้เห็นชัดขึ้น หรือลดความมั่นใจขั้นต่ำในตั้งค่าเพิ่มเติม"));
+function outfitCard(o, key, img) {
+  const isRef = key === "ref";
+  const shot = el("figure", { class: "shot" }, el("img", { src: img.src, alt: isRef ? "รูปเรฟ" : `รูปที่ ${key + 1}` }));
+  if (!o.detections.length) shot.append(el("div", { class: "empty-shot" }, "Dobby หาเสื้อผ้าในรูปนี้ไม่เจอ บอกเองได้ด้านล่าง"));
 
   const st = o.style;
   const hasStyle = st.styles.length > 0;
   const bars = Object.entries(st.scores).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]).slice(0, 4);
-
-  return el("article", { class: "outfit" },
-    el("header", {}, el("h3", {}, `รูปที่ ${i + 1}`)),
+  const card = el("article", { class: "outfit" },
+    el("header", {}, el("h3", {}, isRef ? "รูปเรฟ" : `รูปที่ ${key + 1}`)),
     shot,
-    el("span", { class: `sticker ${hasStyle ? "" : "none"}` }, st.label),
+    el("span", { class: `sticker ${hasStyle ? "" : "none"}` }, hasStyle ? st.label : "ยังไม่รู้สไตล์"),
+    st.manual && el("p", { class: "manual-note" }, "สไตล์นี้คุณระบุเอง"),
     hasStyle && el("p", { class: "tagline" }, st.styles.map((s) => TAGLINE[s]).join(" / ")),
     hasStyle && el("p", { class: "more" }, "ดูสไตล์: ",
       st.styles.map((s) => el("button", { class: "link", type: "button", onclick: () => jumpToStyle(s) }, s))),
-    bars.length > 0 && el("ul", { class: "bars", "aria-label": "คะแนนแต่ละสไตล์" },
+    bars.length > 0 && !st.manual && el("ul", { class: "bars", "aria-label": "คะแนนแต่ละสไตล์" },
       bars.map(([name, v]) => el("li", {},
         el("span", {}, name),
         el("span", { class: "track" }, el("span", { class: "fill", style: `display:block;width:${v}%` })),
         el("span", { class: "pct" }, Math.round(v) + "%")))),
     o.detections.length > 0 && el("ul", { class: "found", "aria-label": "ชิ้นที่ตรวจเจอ" },
-      o.detections.map((d) => el("li", {}, `${CAT_TH[d.category]} · ${TH[d.cls] || d.cls} ${pct(d.conf)}`)))
-  );
+      o.detections.map((d) => el("li", {}, `${TH[d.cls] || d.cls} ${d.manual ? "· ระบุเอง" : pct(d.conf)}`, ...toneDot(d.color)))));
+
+  if (state.last) {
+    const panel = el("div", { class: "editor" });
+    const btn = el("button", { class: "fixbtn", type: "button", "aria-expanded": "false" }, "แก้ให้ถูก");
+    const open = () => {
+      panel.replaceChildren(editorBody(key, img, () => { panel.hidden = true; btn.setAttribute("aria-expanded", "false"); }));
+      panel.hidden = false; btn.setAttribute("aria-expanded", "true");
+    };
+    btn.addEventListener("click", () => (panel.hidden ? open() : (panel.hidden = true, btn.setAttribute("aria-expanded", "false"))));
+    panel.hidden = true;
+    card.append(btn, panel);
+    if (!o.detections.length && !st.manual) open();          // ไม่เจออะไร -> เปิดให้บอกเองเลย
+  }
+  return card;
 }
 
-const CAT_PLAIN = { top: "ท่อนบน", bottom: "ท่อนล่าง", one_piece: "เดรส" };
+/* ---------- แก้ผลเอง (กรณี Dobby ตรวจไม่เจอหรือตรวจผิด) ---------- */
+const GROUPS = [["เสื้อ", "top"], ["กางเกง & กระโปรง", "bottom"], ["เดรส", "one_piece"], ["เสื้อคลุม", "outer"]];
+function pieceSelect(value, placeholder) {
+  const sel = el("select", { class: "piece-select" });
+  sel.append(el("option", { value: "" }, placeholder));
+  GROUPS.forEach(([label, cat]) => {
+    const og = el("optgroup", { label });
+    Object.keys(CLS_CAT).filter((c) => CLS_CAT[c] === cat).forEach((c) =>
+      og.append(el("option", { value: c, selected: c === value ? "" : null }, TH[c] || c)));
+    sel.append(og);
+  });
+  return sel;
+}
+const rawsOf = (key) => (key === "ref" ? state.last.refRaw : state.last.raws[key]);
 
-function targetBlock(t, refImg) {
+function centerColor(img, box) {        // สีกลางของชิ้นที่ระบุเอง (ค่ามัธยฐานช่วงกลางรูป)
+  try {
+    const c = document.createElement("canvas"); c.width = c.height = 32;
+    const W = img.naturalWidth, H = img.naturalHeight;
+    const [x1, y1, x2, y2] = box;
+    const ctx = c.getContext("2d");
+    ctx.drawImage(img, (x1 + (x2 - x1) * .25) * W, (y1 + (y2 - y1) * .2) * H, (x2 - x1) * .5 * W, (y2 - y1) * .6 * H, 0, 0, 32, 32);
+    const d = ctx.getImageData(0, 0, 32, 32).data, ch = [[], [], []];
+    for (let k = 0; k < d.length; k += 4) { ch[0].push(d[k]); ch[1].push(d[k + 1]); ch[2].push(d[k + 2]); }
+    return ch.map((a) => a.sort((p, q) => p - q)[a.length >> 1]);
+  } catch { return null; }
+}
+
+function editorBody(key, img, close) {
+  const draft = rawsOf(key).map((d) => ({ ...d }));
+  let styleVal = state.last.styles[key] || "";
+  const body = el("div", {});
+  const status = el("p", { class: "edit-status", role: "status" });
+
+  const render = () => {
+    body.replaceChildren();
+    body.append(el("p", { class: "edit-title" }, "Dobby เห็นผิด หรือหาไม่เจอ? บอกเองได้เลย"));
+    draft.forEach((d, n) => {
+      const sel = pieceSelect(d.cls, "ลบชิ้นนี้ออก");
+      sel.setAttribute("aria-label", `ชิ้นที่ ${n + 1}`);
+      sel.addEventListener("change", () => {
+        if (!sel.value) draft.splice(n, 1);
+        else { d.cls = sel.value; d.manual = true; d.conf = 1; }
+        render();
+      });
+      body.append(el("div", { class: "edit-row" }, el("span", { class: "edit-label" }, `ชิ้นที่ ${n + 1}`), sel));
+    });
+    const add = pieceSelect("", "+ เพิ่มชิ้น");
+    add.setAttribute("aria-label", "เพิ่มชิ้น");
+    add.addEventListener("change", () => {
+      if (!add.value) return;
+      draft.push({ cls: add.value, conf: 1, box: [0, 0, 1, 1], rgb: centerColor(img, [0, 0, 1, 1]), manual: true });
+      render();
+    });
+    body.append(el("div", { class: "edit-row" }, add));
+
+    const ss = el("select", { "aria-label": "สไตล์" });
+    ss.append(el("option", { value: "" }, "ให้ Dobby คิดให้"));
+    Object.keys(STYLE_META).forEach((s) => ss.append(el("option", { value: s, selected: s === styleVal ? "" : null }, s)));
+    ss.addEventListener("change", () => { styleVal = ss.value; });
+    body.append(el("div", { class: "edit-row" }, el("span", { class: "edit-label" }, "สไตล์"), ss));
+
+    const apply = el("button", { class: "go small", type: "button" }, "อัปเดตผล");
+    apply.addEventListener("click", async () => {
+      apply.disabled = true; status.textContent = "กำลังคำนวณใหม่…";
+      const before = { raws: rawsOf(key), style: state.last.styles[key] };
+      if (key === "ref") state.last.refRaw = draft; else state.last.raws[key] = draft;
+      if (styleVal) state.last.styles[key] = styleVal; else delete state.last.styles[key];
+      try {
+        await rescore();
+      } catch (e) {
+        if (key === "ref") state.last.refRaw = before.raws; else state.last.raws[key] = before.raws;
+        if (before.style) state.last.styles[key] = before.style; else delete state.last.styles[key];
+        status.textContent = e.message; apply.disabled = false;
+      }
+    });
+    body.append(el("div", { class: "edit-actions" }, apply,
+      el("button", { class: "textbtn", type: "button", onclick: close }, "ยกเลิก")), status);
+  };
+  render();
+  return body;
+}
+
+async function rescore() {
+  const L = state.last;
+  const res = await fetch("/api/rescore", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ outfits: L.raws, names: L.names, ref: L.refRaw, styles: L.styles }),
+  });
+  if (!res.ok) throw new Error(res.status === 404 ? "เซิร์ฟเวอร์ยังเป็นเวอร์ชันเก่า อัปเดต main.py แล้วรีสตาร์ท" : "อัปเดตผลไม่สำเร็จ ลองใหม่อีกครั้ง");
+  const data = await res.json();
+  const y = window.scrollY;
+  renderResults(data, L.imgs, L.refImg);
+  window.scrollTo(0, y);
+}
+const toRaw = (d) => ({ cls: d.cls, conf: d.conf, box: d.box, rgb: d.color ? d.color.rgb : null, manual: !!d.manual });
+
+function targetBlock(t, refImg, refOutfit) {
   const pieces = (t.pieces || []).map((c) => TH[c] || c);
   const goals = t.styles.map((s) => el("span", { class: "goal", style: styleVars(s) }, s));
   if (t.source === "ref" && refImg) {
-    const card = outfitCard({ detections: t.detections, style: { label: t.label, styles: t.styles, scores: t.scores } }, 0, refImg);
-    card.querySelector("h3").textContent = "รูปเรฟ";
+    const card = outfitCard(refOutfit || { detections: t.detections, style: { label: t.label, styles: t.styles, scores: t.scores } }, "ref", refImg);
     return el("div", { class: "target" }, card,
       el("div", { class: "target-info" },
-        el("h4", {}, `AI มองเรฟนี้เป็น ${t.label}`),
-        el("p", {}, `ในเรฟมี ${pieces.join(" + ")} AI จะให้คะแนนชุดของคุณตามความใกล้ทั้งสไตล์และชิ้นที่ใช้`),
+        el("h4", {}, `Dobby มองเรฟนี้เป็น ${t.label}`),
+        el("p", {}, `${pieces.length ? `ในเรฟมี ${pieces.join(" + ")} ` : ""}Dobby จะให้คะแนนชุดของคุณตามความใกล้ทั้งสไตล์และชิ้นที่ใช้`),
         el("div", {}, goals)));
   }
   return el("div", { class: "target no-photo" },
@@ -1093,11 +1254,11 @@ function targetBlock(t, refImg) {
 
 function suggestSection(sugs, t) {
   return el("ul", { class: "sugs" }, sugs.map((sg) => {
-    const cat = CAT_PLAIN[sg.category];
+    const cat = CAT_PLAIN[sg.category], catS = CAT_SENT[sg.category];
     let why;
     if (sg.reason === "missing" && sg.category === "one_piece") why = "หรือจะใส่เดรสชิ้นเดียวแทนก็ได้";
-    else if (sg.reason === "missing") why = t ? `คุณยังไม่มี${cat} ลองหาแบบนี้ให้ได้ลุคใกล้${t.source === "ref" ? "เรฟ" : " " + t.label}` : `คุณยังไม่มี${cat} แบบนี้เข้ากับเสื้อผ้าที่มี`;
-    else why = `${cat}ที่มียังไม่เข้ากับ${t.source === "ref" ? "เรฟ" : " " + t.label} ถ้ามีแบบนี้จะใกล้ขึ้น`;
+    else if (sg.reason === "missing") why = t ? `คุณยังไม่มี${catS} ลองหาแบบนี้ให้ได้ลุคใกล้${t.source === "ref" ? "เรฟ" : " " + t.label}` : `คุณยังไม่มี${catS} แบบนี้เข้ากับเสื้อผ้าที่มี`;
+    else why = `${catS}ที่มียังไม่เข้ากับ${t.source === "ref" ? "เรฟ" : " " + t.label} ถ้ามีแบบนี้จะใกล้ขึ้น`;
     return el("li", { class: "sug" },
       el("h4", {}, cat),
       el("p", {}, why),
@@ -1108,8 +1269,8 @@ function suggestSection(sugs, t) {
 function mixSection(data, imgs) {
   if (!data.mixmatch.length) {
     return el("p", { class: "note" }, data.suggestions && data.suggestions.length
-      ? "ยังจัดชุดไม่ได้ ต้องมีทั้งท่อนบนและท่อนล่าง (หรือเดรส) ดูชิ้นที่ควรหามาเพิ่มด้านล่าง หรือถ่ายรูปเพิ่มแล้วกดจัดลุคอีกครั้ง"
-      : "ยังจัดชุดไม่ได้ ต้องเจอท่อนบนและท่อนล่าง (หรือเดรส) อย่างน้อยอย่างละชิ้น ลองเพิ่มรูป หรือลดความมั่นใจขั้นต่ำในตั้งค่าเพิ่มเติม");
+      ? "ยังจัดชุดไม่ได้ ต้องมีทั้งเสื้อ และกางเกงหรือกระโปรง (หรือเดรส) ดูชิ้นที่ควรหามาเพิ่มด้านล่าง หรือถ่ายรูปเพิ่มแล้วกดจัดลุคอีกครั้ง"
+      : "ยังจัดชุดไม่ได้ ต้องมีเสื้อ และกางเกงหรือกระโปรง (หรือเดรส) อย่างน้อยอย่างละชิ้น ลองเพิ่มรูป หรือลดความมั่นใจขั้นต่ำในตั้งค่าเพิ่มเติม");
   }
   const list = el("ol", { class: "combos" });
   data.mixmatch.forEach((c, n) => {
@@ -1134,7 +1295,7 @@ function mixSection(data, imgs) {
             el("i", { style: `width:${c.score}%` }))
         ]),
         el("ul", { class: "parts" },
-          body.map((it) => el("li", {}, name(it), el("span", {}, `จากรูป ${it.outfit + 1}`)))),
+          body.map((it) => el("li", {}, name(it), el("span", {}, `จากรูป ${it.outfit + 1}`, ...toneDot(it.color))))),
         outer && el("div", { class: "outer-thumb" },
           cropCanvas(imgs[outer.outfit], outer.box, name(outer)),
           `คลุมด้วย${name(outer)} · จากรูป ${outer.outfit + 1}`))));

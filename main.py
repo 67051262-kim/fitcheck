@@ -13,12 +13,13 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Optional
 
-from fastapi import FastAPI, File, Form, HTTPException, Query, UploadFile
+from fastapi import Body, FastAPI, File, Form, HTTPException, Query, UploadFile
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from PIL import Image, ImageOps, UnidentifiedImageError
 from ultralytics import YOLO
 
+import colors
 import fitcheck
 
 log = logging.getLogger("fitcheck")
@@ -43,6 +44,8 @@ async def lifespan(_: FastAPI):
     names = list(model.names.values())
     unknown = [n for n in names if fitcheck.normalize_class(n) is None]
     missing = [c for c in fitcheck.CATEGORY if c not in {fitcheck.normalize_class(n) for n in names}]
+    for problem in fitcheck.check_mapping():
+        log.warning("mapping สไตล์: %s", problem)
     if unknown:
         log.warning("คลาสในโมเดลที่ไม่อยู่ใน mapping (จะถูกข้าม): %s", unknown)
     if missing:
@@ -71,10 +74,12 @@ def _detect(img: Image.Image, conf: float) -> list[dict]:
         res = _state["model"].predict(img, conf=conf, imgsz=IMGSZ, verbose=False)[0]
     out = []
     for b in res.boxes:
+        box = [float(v) for v in b.xyxyn[0].tolist()]
         out.append({
             "cls": res.names[int(b.cls[0])],
             "conf": float(b.conf[0]),
-            "box": [float(v) for v in b.xyxyn[0].tolist()],
+            "box": box,
+            "rgb": colors.dominant_color(img, box),   # สีหลักของชิ้น ใช้ช่วยตัดสินสไตล์
         })
     return out
 
@@ -101,9 +106,45 @@ def analyze(
     return result
 
 
+@app.post("/api/rescore")
+def rescore(payload: dict = Body(...)):
+    """คำนวณผลใหม่จากชิ้นที่ผู้ใช้แก้เอง โดยไม่ต้องรัน YOLO ซ้ำ
+    payload = {"outfits": [[{cls, conf, box, rgb}, ...], ...], "names": [...],
+               "ref": [...] | null, "styles": {"0": "Y2K", "ref": "Softgirl"}}"""
+    outfits = payload.get("outfits")
+    if not isinstance(outfits, list) or not 1 <= len(outfits) <= MAX_FILES:
+        raise HTTPException(400, f"ส่งได้ 1-{MAX_FILES} รูป")
+
+    def clean(dets):
+        out = []
+        for d in dets or []:
+            try:
+                box = [float(v) for v in d.get("box", [0, 0, 1, 1])][:4]
+                rgb = d.get("rgb")
+                out.append({"cls": str(d["cls"]), "conf": max(0.0, min(1.0, float(d.get("conf", 1.0)))),
+                            "box": box if len(box) == 4 else [0, 0, 1, 1],
+                            "rgb": [int(c) for c in rgb][:3] if rgb else None,
+                            "manual": bool(d.get("manual"))})
+            except (KeyError, TypeError, ValueError):
+                continue
+        return out
+
+    ref = payload.get("ref")
+    result = fitcheck.analyze_closet([clean(o) for o in outfits], payload.get("names"),
+                                     ref_raw=clean(ref) if ref is not None else None,
+                                     style_overrides=payload.get("styles") or {})
+    result["unknown_classes"] = _state["unknown_classes"]
+    return result
+
+
 @app.get("/api/styles")
 def styles():
     return fitcheck.style_catalog()
+
+
+@app.get("/api/style-colors")
+def style_colors():
+    return fitcheck.style_colors()
 
 
 @app.get("/api/style-images")
