@@ -1,0 +1,1201 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>fit check · AI จัดลุคจากรูปเสื้อผ้า</title>
+<meta name="description" content="ใส่รูปชุดหรือเสื้อผ้าของคุณ AI จะบอกว่าเป็นสไตล์ไหน แล้วจัดอันดับชุดที่เข้ากันที่สุดให้">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;500;600&family=Unbounded:wght@600;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  color-scheme: light;
+  --paper: #F4F2FB;
+  --card: #FFFFFF;
+  --ink: #17142B;
+  --muted: #6B6786;
+  --line: #DAD5EE;
+  --blue: #3A2BFF;
+  --pink: #FF5BAA;
+  --lime: #CFFF3D;
+  --display: "Unbounded", "Anuphan", system-ui, sans-serif;
+  --body: "Anuphan", "Noto Sans Thai", system-ui, sans-serif;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0; background: var(--paper); color: var(--ink);
+  font: 400 16px/1.6 var(--body); -webkit-font-smoothing: antialiased;
+}
+.wrap { max-width: 1160px; margin: 0 auto; padding: 0 20px; }
+:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
+section[id] { scroll-margin-top: 64px; }
+h2 { font: 800 clamp(1.5rem, 4vw, 2.3rem)/1.12 var(--display); letter-spacing: -0.02em; margin: 0 0 8px; }
+.sub { color: var(--muted); margin: 0 0 28px; max-width: 40em; }
+
+/* ---------- buttons ---------- */
+.go, .ghost {
+  display: inline-block; font: 600 1rem var(--body); cursor: pointer; text-decoration: none;
+  border: 2px solid var(--ink); border-radius: 999px; padding: 12px 28px;
+  box-shadow: 3px 3px 0 var(--ink); transition: transform .12s, box-shadow .12s;
+}
+.go { color: #fff; background: var(--blue); }
+.ghost { color: var(--ink); background: var(--card); }
+.go:hover:not(:disabled), .ghost:hover { transform: translate(-1px,-1px); box-shadow: 4px 4px 0 var(--ink); }
+.go:active:not(:disabled), .ghost:active { transform: translate(2px,2px); box-shadow: 1px 1px 0 var(--ink); }
+.go:disabled { background: var(--line); color: var(--muted); border-color: var(--line); box-shadow: none; cursor: not-allowed; }
+
+/* ---------- top bar ---------- */
+.top {
+  position: sticky; top: 0; z-index: 30; background: rgba(244,242,251,.92);
+  backdrop-filter: blur(8px); border-bottom: 2px solid var(--ink);
+}
+.top .wrap { display: flex; align-items: center; justify-content: space-between; height: 56px; }
+.logo { font: 800 1.15rem var(--display); letter-spacing: -0.03em; color: var(--ink); text-decoration: none; }
+.logo i { font-style: normal; background: var(--lime); padding: 0 6px; border-radius: 6px; border: 2px solid var(--ink); margin-left: 2px; }
+.links { display: flex; gap: 22px; }
+.links a { color: var(--ink); text-decoration: none; font-weight: 500; font-size: .95rem; padding: 6px 0; border-bottom: 2px solid transparent; }
+.links a:hover { border-bottom-color: var(--pink); }
+
+/* ---------- hero ---------- */
+.hero { padding: 64px 0 56px; overflow: hidden; }
+.hero-grid { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 36px; align-items: center; }
+.kicker { font-weight: 600; margin: 0 0 14px; }
+.kicker::before { content: ""; display: inline-block; width: 28px; height: 3px; background: var(--pink); vertical-align: middle; margin-right: 10px; }
+h1 {
+  margin: 0 0 22px; display: grid; font: 800 clamp(3.6rem, 15vw, 9.5rem)/.86 var(--display);
+  letter-spacing: -0.05em; text-transform: uppercase;
+}
+h1 .outline { color: transparent; -webkit-text-stroke: 3px var(--ink); }
+.lead { font-size: 1.15rem; max-width: 30em; margin: 0 0 26px; }
+.cta-row { display: flex; flex-wrap: wrap; gap: 14px; }
+.stickers { display: flex; flex-wrap: wrap; gap: 14px 12px; align-content: center; justify-content: center; padding: 10px; }
+.stk {
+  font: 800 var(--fs, 1.4rem)/1 var(--display); letter-spacing: -0.02em; cursor: pointer;
+  background: var(--bg); color: var(--fg); border: 2px solid var(--ink); border-radius: 999px;
+  padding: 14px 22px; box-shadow: 4px 4px 0 var(--ink); transform: rotate(var(--r, 0deg));
+  transition: transform .18s;
+}
+.stk:hover { transform: rotate(0deg) scale(1.08); }
+
+/* ---------- marquee ---------- */
+.marquee { background: var(--ink); color: var(--lime); overflow: hidden; border-block: 2px solid var(--ink); }
+.marquee .track { display: flex; width: max-content; animation: slide 32s linear infinite; }
+.marquee span { font: 800 1.05rem var(--display); padding: 13px 20px; white-space: nowrap; }
+.marquee span:nth-child(even) { color: var(--pink); }
+@keyframes slide { to { transform: translateX(-50%); } }
+
+/* ---------- upload / tool ---------- */
+.tool { padding-top: 76px; }
+.tray { display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
+.thumb, .add { position: relative; aspect-ratio: 3 / 4; border-radius: 14px; overflow: hidden; }
+.thumb { background: var(--card); border: 2px solid var(--ink); }
+.thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.thumb .n {
+  position: absolute; left: 8px; top: 8px; background: var(--ink); color: #fff;
+  font: 600 12px/1 var(--display); padding: 6px 9px; border-radius: 999px;
+}
+.thumb .del, .refdrop .thumb button {
+  z-index: 2;
+  position: absolute; right: 8px; top: 8px; width: 32px; height: 32px; border-radius: 50%;
+  border: 2px solid var(--ink); background: var(--card); color: var(--ink);
+  font: 600 18px/1 var(--body); cursor: pointer; display: grid; place-items: center; padding: 0;
+}
+.thumb .del:hover, .refdrop .thumb button:hover { background: var(--pink); }
+/* ตู้เสื้อผ้า */
+.round-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; margin: 0 0 14px; }
+.round-bar h3 { margin: 0; font: 800 1.15rem var(--display); }
+.round-bar .count { color: var(--muted); font-size: .92rem; }
+.closet-btn {
+  margin-left: auto; display: inline-flex; align-items: center; gap: 10px; cursor: pointer;
+  font: 600 .95rem var(--body); color: var(--ink); background: var(--lime);
+  border: 2px solid var(--ink); border-radius: 999px; padding: 8px 18px; box-shadow: 3px 3px 0 var(--ink);
+}
+.closet-btn:hover { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 var(--ink); }
+.closet-btn .badge { background: var(--ink); color: #fff; border-radius: 999px; padding: 0 9px; font: 800 .8rem/1.6 var(--display); }
+.closet-btn[disabled] { background: var(--card); color: var(--muted); border-color: var(--line); box-shadow: none; cursor: default; transform: none; }
+.closet-btn[disabled] .badge { background: var(--line); color: var(--muted); }
+.savetoggle { display: inline-flex; align-items: center; gap: 8px; font-size: .9rem; cursor: pointer; color: var(--muted); }
+.savetoggle input { width: 18px; height: 18px; accent-color: var(--blue); margin: 0; }
+.notice { margin: 0 0 14px; padding: 12px 16px; border-radius: 14px; background: var(--card); border: 2px dashed var(--blue); font-size: .95rem; }
+.notice button { margin-left: 6px; }
+.textbtn { font: 600 .9rem var(--body); color: var(--blue); background: none; border: 0; padding: 4px 0; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.textbtn.danger { color: #B0175F; }
+
+dialog.closet {
+  width: min(920px, calc(100vw - 32px)); max-height: min(86vh, 900px); padding: 0; border: 2px solid var(--ink);
+  border-radius: 24px; background: var(--paper); color: var(--ink); box-shadow: 8px 8px 0 var(--ink);
+}
+dialog.closet::backdrop { background: rgba(23, 20, 43, .55); }
+.closet-inner { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; max-height: inherit; }
+.closet-head { padding: 22px 24px 14px; border-bottom: 2px solid var(--ink); position: relative; }
+.closet-head h3 { margin: 0 0 4px; font: 800 1.4rem var(--display); }
+.closet-head p { margin: 0; color: var(--muted); font-size: .95rem; padding-right: 40px; }
+.closet-x { position: absolute; right: 18px; top: 18px; width: 38px; height: 38px; border-radius: 50%; border: 2px solid var(--ink); background: var(--card); font: 600 20px/1 var(--body); cursor: pointer; }
+.closet-x:hover { background: var(--pink); }
+.closet-body { overflow-y: auto; padding: 18px 24px; }
+.closet-grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); }
+.closet-foot { display: flex; flex-wrap: wrap; gap: 12px 18px; align-items: center; padding: 14px 24px 18px; border-top: 2px solid var(--ink); background: var(--card); border-radius: 0 0 22px 22px; }
+.closet-foot .sel { font-weight: 600; }
+.closet-foot .go { margin-left: auto; }
+.closet-empty { color: var(--muted); padding: 20px 0; }
+
+.thumb .pick {
+  position: absolute; inset: 0; width: 100%; height: 100%; padding: 0; margin: 0; border: 0; border-radius: 0;
+  background: transparent; cursor: pointer; display: block;
+}
+.thumb .pick:hover { background: transparent; }
+.thumb .pick:focus-visible { outline: 3px solid var(--blue); outline-offset: -5px; }
+.tray .thumb img, .closet-grid .thumb img { object-fit: contain; background: #fff; }
+.thumb.off img { opacity: .38; filter: grayscale(.6); }
+.thumb.on { border-color: var(--blue); box-shadow: 0 0 0 2px var(--blue); }
+.thumb .check {
+  position: absolute; left: 8px; bottom: 8px; width: 26px; height: 26px; border-radius: 50%; pointer-events: none;
+  border: 2px solid var(--ink); background: var(--card); display: grid; place-items: center; font: 800 14px/1 var(--body);
+}
+.thumb.on .check { background: var(--blue); color: #fff; }
+.thumb .n, .thumb .del, .thumb .check { z-index: 1; }
+.thumb .new-unused { position: absolute; right: 8px; bottom: 8px; z-index: 1; pointer-events: none; background: var(--lime); border: 2px solid var(--ink); border-radius: 999px; padding: 1px 8px; font: 600 11px/1.4 var(--body); }
+.add {
+  display: grid; place-items: center; text-align: center; padding: 16px; cursor: pointer;
+  border: 2px dashed var(--muted); color: var(--muted); background: transparent;
+}
+.add:hover, .tray.drag .add { border-color: var(--blue); color: var(--blue); background: #fff; }
+.add:focus-within { outline: 3px solid var(--blue); outline-offset: 2px; }
+.add input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+.add b { display: block; font: 600 1rem var(--body); color: inherit; }
+.add small { display: block; margin-top: 4px; font-size: .85rem; }
+.add .plus { font: 800 2.4rem/1 var(--display); display: block; margin-bottom: 6px; }
+
+.controls { display: flex; flex-wrap: wrap; gap: 18px 28px; align-items: center; margin: 22px 0 8px; }
+/* เรฟ */
+.refbox { margin: 26px 0 0; padding: 18px 20px 20px; border: 2px solid var(--ink); border-radius: 18px; background: var(--card); min-width: 0; }
+.refbox legend { font: 800 1.15rem var(--display); letter-spacing: -0.01em; padding: 0 8px; margin-left: -8px; }
+.refbox > .hint { margin: 0 0 14px; }
+.seg { display: flex; flex-wrap: wrap; gap: 8px; }
+.seg label { position: relative; cursor: pointer; }
+.seg input { position: absolute; opacity: 0; inset: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; z-index: 1; }
+.seg span {
+  display: inline-block; padding: 8px 16px; border: 2px solid var(--ink); border-radius: 999px;
+  font-weight: 600; font-size: .95rem; background: var(--card);
+}
+.seg input:checked + span { background: var(--ink); color: #fff; }
+.seg input:focus-visible + span { outline: 3px solid var(--blue); outline-offset: 2px; }
+.seg label:hover input:not(:checked) + span { background: var(--lime); }
+.refpane { margin-top: 16px; }
+.refdrop { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+.refdrop .add, .refdrop .thumb { width: 130px; flex: none; }
+
+/* ผลเทียบเรฟ + แนะนำชิ้น */
+.target { display: grid; grid-template-columns: minmax(0, 260px) minmax(0, 1fr); gap: 22px; align-items: start; margin-bottom: 56px; }
+.target.no-photo { grid-template-columns: 1fr; }
+.target .outfit { margin: 0; }
+.target-info h4 { margin: 0 0 6px; font: 800 1.4rem/1.15 var(--display); letter-spacing: -0.02em; }
+.target-info p { margin: 0 0 10px; color: var(--muted); }
+.goal { display: inline-block; background: var(--bg); color: var(--fg); border: 2px solid var(--ink); border-radius: 999px; padding: 4px 14px; font: 800 1rem var(--display); box-shadow: 2px 2px 0 var(--ink); margin-right: 6px; }
+.subscore { font-size: .85rem; color: var(--muted); }
+.sugs { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); margin: 0; padding: 0; list-style: none; }
+.sug { background: var(--lime); border: 2px solid var(--ink); border-radius: 18px; padding: 16px 18px; }
+.sug h4 { margin: 0 0 4px; font: 800 1.1rem var(--display); }
+.sug p { margin: 0 0 10px; font-size: .92rem; }
+.sug ul { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.sug li { background: var(--card); border: 2px solid var(--ink); border-radius: 999px; padding: 3px 12px; font-weight: 600; font-size: .9rem; }
+
+.adv { margin: 4px 0 0; font-size: .92rem; }
+.adv summary { cursor: pointer; color: var(--muted); font-weight: 500; width: max-content; }
+.adv summary:hover { color: var(--ink); }
+.adv .controls { margin: 12px 0 0; }
+.controls label { display: flex; align-items: center; gap: 12px; font-size: .95rem; }
+.controls input[type=range] { width: 170px; accent-color: var(--blue); }
+.controls output { font-variant-numeric: tabular-nums; min-width: 2.6em; font-weight: 600; }
+.hint { color: var(--muted); font-size: .9rem; margin: 6px 0 0; }
+.error { margin: 16px 0 0; padding: 12px 16px; border-radius: 12px; background: #FFE4EF; border: 2px solid var(--pink); font-weight: 500; }
+
+/* ---------- results ---------- */
+#results { margin: 56px 0 0; }
+#results h3.part { font: 800 clamp(1.3rem, 3.4vw, 1.8rem)/1.15 var(--display); letter-spacing: -0.02em; margin: 0 0 20px; }
+.outfits { display: grid; gap: 22px; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
+.outfit { background: var(--card); border-radius: 18px; padding: 16px; border: 2px solid var(--ink); }
+.outfit header { padding: 0 0 12px; }
+.outfit h3 { margin: 0; font: 600 1rem var(--display); }
+.shot { position: relative; margin: 0; line-height: 0; border-radius: 10px; overflow: hidden; background: var(--paper); }
+.shot img { width: 100%; height: auto; display: block; }
+.box { position: absolute; border: 2px solid var(--c); border-radius: 4px; --c: var(--blue); --on: #fff; }
+.box[data-cat=bottom]    { --c: var(--pink); --on: var(--ink); }
+.box[data-cat=one_piece] { --c: var(--lime); --on: var(--ink); }
+.box[data-cat=outer]     { --c: var(--ink);  --on: #fff; }
+.box span {
+  position: absolute; left: -2px; top: -2px; background: var(--c); color: var(--on);
+  font: 500 11px/1.4 var(--body); padding: 1px 6px; border-radius: 2px 0 6px 0; white-space: nowrap;
+}
+.empty-shot {
+  position: absolute; inset: auto 0 0 0; background: rgba(23,20,43,.78); color: #fff;
+  font: 500 .9rem/1.4 var(--body); padding: 10px 14px; text-align: center;
+}
+.sticker {
+  display: inline-block; margin: -20px 0 0 12px; position: relative; z-index: 1;
+  background: var(--lime); color: var(--ink); border: 2px solid var(--ink);
+  font: 800 clamp(1.05rem, 3vw, 1.3rem)/1.1 var(--display); letter-spacing: -0.01em;
+  padding: 10px 18px; border-radius: 999px; box-shadow: 3px 3px 0 var(--ink); transform: rotate(-3deg);
+}
+.sticker.none { background: var(--line); font-size: 1rem; }
+.tagline { margin: 12px 0 0; color: var(--muted); font-size: .95rem; }
+.more { margin: 8px 0 0; font-size: .9rem; }
+.link { font: 600 .9rem var(--body); color: var(--blue); background: none; border: 0; padding: 0 8px 0 0; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.bars { list-style: none; margin: 14px 0 0; padding: 0; display: grid; gap: 7px; }
+.bars li { display: grid; grid-template-columns: 90px 1fr 46px; align-items: center; gap: 10px; font-size: .88rem; }
+.bars .track { height: 8px; background: var(--paper); border-radius: 99px; overflow: hidden; }
+.bars .fill { height: 100%; background: var(--blue); border-radius: 99px; }
+.bars li:first-child .fill { background: var(--pink); }
+.bars .pct { text-align: right; font-variant-numeric: tabular-nums; color: var(--muted); }
+.found { display: flex; flex-wrap: wrap; gap: 6px; margin: 14px 0 0; padding: 0; list-style: none; }
+.found li { font-size: .82rem; border: 1.5px solid var(--line); border-radius: 999px; padding: 2px 10px; }
+
+.combos { display: grid; gap: 14px; margin: 0; padding: 0; list-style: none; }
+.combos { grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 18px; }
+.combo {
+  display: grid; grid-template-columns: 170px minmax(0, 1fr); gap: 18px; align-items: center;
+  background: var(--card); border: 2px solid var(--ink); border-radius: 18px; padding: 16px;
+}
+.look { margin: 0; display: grid; place-items: center; background: var(--paper); border-radius: 12px; padding: 12px 8px; }
+.look canvas { display: block; width: auto; height: auto; max-width: 150px; max-height: 360px; }
+.parts { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 3px; font-size: .86rem; }
+.parts li span { display: block; color: var(--muted); font-size: .78rem; line-height: 1.3; }
+.parts li { line-height: 1.35; }
+.outer-thumb { display: flex; align-items: center; gap: 10px; margin-top: 8px; font-size: .85rem; color: var(--muted); }
+.outer-thumb canvas { display: block; height: 56px; width: auto; border-radius: 8px; border: 2px solid var(--ink); }
+.combo .rank { font: 800 .8rem var(--display); color: var(--muted); }
+.pieces { display: flex; align-items: flex-end; gap: 10px; flex-wrap: wrap; }
+.piece { margin: 0; text-align: center; }
+.piece canvas { display: block; height: 124px; width: auto; max-width: 150px; border-radius: 10px; border: 2px solid var(--ink); background: var(--paper); }
+.piece figcaption { font-size: .8rem; color: var(--muted); margin-top: 5px; line-height: 1.3; }
+.join { font: 800 1.3rem var(--display); align-self: center; color: var(--muted); margin-bottom: 22px; }
+.verdict { display: grid; gap: 6px; }
+.verdict .label { font: 800 1.05rem/1.2 var(--display); }
+.verdict .score { display: flex; align-items: baseline; gap: 8px; }
+.verdict .score b { font: 800 2rem/1 var(--display); letter-spacing: -0.03em; }
+.verdict .score span { font-weight: 600; font-size: .92rem; }
+.meter { height: 8px; background: var(--paper); border-radius: 99px; overflow: hidden; }
+.meter i { display: block; height: 100%; background: var(--blue); border-radius: 99px; }
+.note { padding: 22px; border: 2px dashed var(--muted); border-radius: 18px; color: var(--muted); }
+
+/* ---------- style stories (editorial) ---------- */
+.styles { padding-top: 96px; }
+.tiles { list-style: none; margin: 0 0 18px; padding: 0; display: grid; gap: 14px; grid-template-columns: repeat(6, minmax(0, 1fr)); }
+.tiles a { display: block; color: var(--ink); text-decoration: none; }
+.tiles .art { aspect-ratio: 3 / 4; border-radius: 16px; }
+.tiles a:hover .art { transform: translateY(-4px); }
+.tiles span { display: block; margin-top: 8px; font: 800 .95rem var(--display); letter-spacing: -0.01em; }
+.tiles small { display: block; color: var(--muted); font-size: .8rem; line-height: 1.35; }
+
+.art {
+  position: relative; overflow: hidden; background: var(--bg); border: 2px solid var(--ink);
+  box-shadow: 4px 4px 0 var(--ink); transition: transform .2s;
+}
+.art svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.art > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 15%; }
+
+.story {
+  display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 28px 56px; align-items: center;
+  max-width: 1160px; margin: 0 auto; padding: 72px 20px 0; scroll-margin-top: 56px;
+}
+.story:nth-of-type(even) .story-art { order: 2; }
+.story-art .art { aspect-ratio: 5 / 4; border-radius: 28px; box-shadow: 8px 8px 0 var(--ink); }
+/* รูปจริงส่วนใหญ่เป็นแนวตั้งเต็มตัว: ใช้กรอบแนวตั้ง ไม่ให้หัว/เท้าโดนตัด */
+.story.has-photo { grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); }
+.story.has-photo:nth-of-type(even) { grid-template-columns: minmax(0, 6fr) minmax(0, 5fr); }
+.story.has-photo .story-art .art { aspect-ratio: 4 / 5; }
+.story-art .art svg { padding: 4% 0; }
+.story-art .extra { position: absolute; right: 16px; bottom: 16px; display: flex; gap: 10px; z-index: 1; }
+.story-art .extra img { width: 92px; aspect-ratio: 3 / 4; object-fit: cover; border-radius: 12px; border: 2px solid var(--ink); box-shadow: 3px 3px 0 var(--ink); }
+.story.flash .art { outline: 4px solid var(--blue); outline-offset: 6px; }
+.story-kicker { margin: 0 0 6px; font-weight: 600; color: var(--muted); }
+.story-text { container-type: inline-size; min-width: 0; }
+.story h3 {
+  margin: 0 0 14px; font: 800 clamp(2rem, 10.5cqi, 5rem)/.92 var(--display); letter-spacing: -0.05em;
+  text-transform: uppercase; white-space: nowrap;
+}
+.story-tag { display: inline-block; margin: 0 0 18px; background: var(--bg); color: var(--fg); border: 2px solid var(--ink); border-radius: 999px; padding: 5px 16px; font-weight: 600; }
+.story-about { margin: 0 0 22px; font-size: 1.08rem; max-width: 34em; }
+.story h4 { margin: 0 0 8px; font: 600 .95rem var(--body); color: var(--muted); }
+.story .pieces { list-style: none; display: flex; flex-wrap: wrap; gap: 7px; margin: 0 0 20px; padding: 0; }
+.story .pieces li { font-size: .9rem; border: 2px solid var(--ink); border-radius: 999px; padding: 3px 12px; background: var(--card); }
+.story .pieces li.sig { background: var(--ink); color: #fff; font-weight: 600; }
+.story .recipe { margin: 0 0 24px; font-size: 1rem; }
+.legend { max-width: 1160px; margin: 40px auto 0; padding: 0 20px; color: var(--muted); font-size: .92rem; }
+.legend .sig { background: var(--ink); color: #fff; border-radius: 999px; padding: 1px 10px; font-weight: 600; font-size: .85rem; margin-right: 6px; }
+
+/* ---------- AI selling points ---------- */
+.ai { padding-top: 96px; }
+.steps { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; margin: 0 0 30px; padding: 0; list-style: none; }
+.steps li { position: relative; border: 2px solid var(--ink); background: var(--card); border-radius: 999px; padding: 6px 16px; font-weight: 600; }
+.steps li + li { margin-left: 26px; }
+.steps li + li::before { content: "→"; position: absolute; left: -26px; top: 50%; transform: translateY(-50%); width: 26px; text-align: center; font: 800 1.1rem var(--display); color: var(--muted); }
+.reasons { display: grid; gap: 18px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+.reason { background: var(--card); border: 2px solid var(--ink); border-radius: 22px; padding: 22px; }
+.reason .no { font: 800 2.6rem/1 var(--display); letter-spacing: -0.05em; color: var(--blue); margin: 0 0 10px; }
+.reason:nth-child(2) .no { color: var(--pink); }
+.reason:nth-child(3) .no { -webkit-text-stroke: 2px var(--ink); color: transparent; }
+.reason:nth-child(4) .no { color: var(--ink); }
+.reason h3 { font: 600 1.1rem/1.3 var(--body); margin: 0 0 8px; }
+.reason p { margin: 0; color: var(--muted); font-size: .95rem; }
+.privacy { margin: 18px 0 0; background: var(--lime); border: 2px solid var(--ink); border-radius: 18px; padding: 16px 20px; font-weight: 500; }
+
+/* ---------- footer ---------- */
+footer { margin-top: 110px; background: var(--ink); color: #fff; padding: 48px 0 56px; }
+footer .big { font: 800 clamp(2.4rem, 11vw, 6.5rem)/.9 var(--display); letter-spacing: -0.05em; text-transform: uppercase; margin: 0 0 22px; color: var(--lime); }
+footer p { margin: 0 0 6px; color: #C9C5E3; max-width: 44em; font-size: .92rem; }
+
+@media (max-width: 860px) {
+  .hero-grid { grid-template-columns: 1fr; }
+  .tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .story, .story.has-photo, .story.has-photo:nth-of-type(even) { grid-template-columns: 1fr; padding-top: 56px; }
+  .story:nth-of-type(even) .story-art { order: 0; }
+  .stickers { justify-content: flex-start; padding: 0; }
+}
+@media (max-width: 640px) {
+  .hero { padding-top: 40px; }
+  .links { gap: 14px; }
+  .combos { grid-template-columns: 1fr; }
+  .target { grid-template-columns: 1fr; }
+  .combo { grid-template-columns: 130px minmax(0, 1fr); gap: 14px; }
+  .look canvas { max-width: 114px; max-height: 300px; }
+  .controls input[type=range] { width: 130px; }
+  #go { width: 100%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .art, .tiles a:hover .art { transition: none; transform: none; }
+  html { scroll-behavior: auto; }
+  .marquee .track { animation: none; }
+  .go, .ghost, .stk { transition: none; }
+  .stk:hover { transform: none !important; }
+}
+</style>
+</head>
+<body>
+
+<nav class="top" aria-label="เมนูหลัก">
+  <div class="wrap">
+    <a class="logo" href="#top">fit check<i>AI</i></a>
+    <div class="links">
+      <a href="#try">ลองเลย</a>
+      <a href="#styles">สไตล์</a>
+      <a href="#ai">AI ของเรา</a>
+    </div>
+  </div>
+</nav>
+
+<section class="hero" id="top">
+  <div class="wrap hero-grid">
+    <div>
+      <p class="kicker">AI จัดลุคจากรูปเสื้อผ้าของคุณ</p>
+      <h1><span>Fit</span><span class="outline">Check</span></h1>
+      <p class="lead">ถ่ายรูปชุดหรือเสื้อผ้าที่มี แล้วให้ AI บอกว่าเป็นสไตล์ไหน พร้อมลองจับคู่ทุกชิ้นให้เป็นลุคที่เข้ากันที่สุด</p>
+      <div class="cta-row">
+        <a class="go" href="#try">ลองเลย</a>
+        <a class="ghost" href="#styles">ดู 6 สไตล์</a>
+      </div>
+    </div>
+    <div class="stickers" id="heroStickers" aria-label="เลือกสไตล์ที่อยากดู"></div>
+  </div>
+</section>
+
+<div class="marquee" aria-hidden="true"><div class="track" id="marquee"></div></div>
+
+<main>
+  <section class="tool wrap" id="try" aria-labelledby="tryTitle">
+    <h2 id="tryTitle">ใส่รูปแล้วให้ AI จัดให้</h2>
+    <p class="sub">จะเป็นรูปชุดที่ใส่ หรือถ่ายเสื้อผ้าทีละชิ้นก็ได้ รูปจะถูกเก็บในตู้เสื้อผ้าบนเครื่องนี้ ครั้งหน้าไม่ต้องถ่ายใหม่</p>
+
+    <div class="round-bar">
+      <span class="count" id="roundCount"></span>
+      <button class="closet-btn" type="button" id="openCloset">ตู้เสื้อผ้าของฉัน</button>
+    </div>
+    <div class="tray" id="tray"></div>
+    <p class="hint" id="closetHint"></p>
+    <label class="savetoggle"><input type="checkbox" id="saveToggle" checked> เก็บรูปที่อัปใหม่ไว้ในตู้เสื้อผ้า</label>
+
+    <fieldset class="refbox">
+      <legend>มีเรฟไหม?</legend>
+      <p class="hint">ไม่มีก็ไม่เป็นไร AI จะเลือกชุดที่เข้ากันที่สุดให้ ถ้ามี AI จะจัดให้ใกล้เรฟที่สุดและบอกว่าควรหาชิ้นไหนเพิ่ม</p>
+      <div class="seg" id="refMode">
+        <label><input type="radio" name="refmode" value="none" checked><span>ไม่มี ให้ AI เลือก</span></label>
+        <label><input type="radio" name="refmode" value="photo"><span>มีรูปเรฟ</span></label>
+      </div>
+      <div class="refpane" id="refPhoto" hidden>
+        <div class="refdrop" id="refDrop"></div>
+        <p class="hint">ใช้รูปลุคที่อยากได้ จะเป็นรูปจาก Pinterest หรือรูปคนอื่นก็ได้ AI ดูแค่ว่าในรูปมีชิ้นอะไร</p>
+      </div>
+    </fieldset>
+
+    <div class="controls">
+      <button class="go" id="go" type="button" disabled>จัดลุค</button>
+    </div>
+    <details class="adv">
+      <summary>ตั้งค่าเพิ่มเติม</summary>
+      <div class="controls">
+        <label for="conf">ความมั่นใจขั้นต่ำ
+          <input type="range" id="conf" min="0.2" max="0.8" step="0.05" value="0.45">
+          <output id="confOut" for="conf">45%</output>
+        </label>
+      </div>
+      <p class="hint">ค่าเริ่มต้น 45% เหมาะกับรูปส่วนใหญ่ ลดลงถ้าระบบหาชิ้นไม่เจอ เพิ่มขึ้นถ้าเจอชิ้นที่ไม่มีอยู่จริง</p>
+    </details>
+    <div id="error" role="alert"></div>
+
+    <div id="results" hidden aria-live="polite"></div>
+  </section>
+
+  <section class="styles" id="styles" aria-labelledby="stylesTitle">
+    <div class="wrap">
+      <h2 id="stylesTitle">6 สไตล์ที่ AI รู้จัก</h2>
+      <p class="sub">แต่ละสไตล์มีชิ้นเด่นของตัวเอง เลือกดูสไตล์ที่ชอบ แล้วลองใช้เป็นสูตรแต่งตัวได้เลย</p>
+      <ul class="tiles" id="styleTiles" aria-label="เลือกสไตล์"></ul>
+    </div>
+    <div id="styleStories"></div>
+    <p class="legend"><span class="sig">★ ชิ้นเอกลักษณ์</span>อยู่ในสไตล์นี้สไตล์เดียว AI จึงให้น้ำหนักมากกว่าชิ้นที่ใช้ร่วมกับสไตล์อื่น</p>
+  </section>
+
+  <section class="ai wrap" id="ai" aria-labelledby="aiTitle">
+    <h2 id="aiTitle">ทำไมต้อง AI ของเรา</h2>
+    <p class="sub">ไม่ใช่แค่ทายสไตล์ แต่บอกได้ว่าเห็นอะไร คิดยังไง และจัดชุดใหม่จากของที่มีให้</p>
+
+    <ol class="steps" aria-label="ขั้นตอนการทำงาน">
+      <li>ใส่รูป</li>
+      <li>AI ตรวจชิ้นเสื้อผ้า</li>
+      <li>ได้สไตล์ + ชุดที่เข้ากัน</li>
+    </ol>
+
+    <div class="reasons">
+      <article class="reason">
+        <p class="no">01</p>
+        <h3>ตรวจละเอียดถึง 16 ชิ้น</h3>
+        <p>โมเดลที่เทรนเอง แยกได้ว่าเป็นเบบี้ที เกาะอก ยีนส์เอวต่ำ หรือกระโปรงสั้น ไม่ใช่แค่ "เสื้อ" กับ "กางเกง" จึงแยกสไตล์ได้คมกว่า</p>
+      </article>
+      <article class="reason">
+        <p class="no">02</p>
+        <h3>เห็นเหตุผลทุกครั้ง</h3>
+        <p>กรอบบนรูปบอกว่าเจอชิ้นไหน มั่นใจกี่เปอร์เซ็นต์ และคะแนนสไตล์คำนวณจากชิ้นเหล่านั้นโดยตรง ไม่ใช่กล่องดำที่ตอบมาลอย ๆ</p>
+      </article>
+      <article class="reason">
+        <p class="no">03</p>
+        <h3>รู้ว่าลุคนี้ผสม</h3>
+        <p>ถ้าสองสไตล์คะแนนสูสีกัน (ห่างน้อยกว่า 10%) AI จะบอกว่าเป็นลุคผสม เช่น Hyperpop × Y2K แทนที่จะเลือกมั่วอย่างเดียว</p>
+      </article>
+      <article class="reason">
+        <p class="no">04</p>
+        <h3>จัดชุดใหม่จากของที่มี</h3>
+        <p>รวมทุกชิ้นจากทุกรูปเป็นตู้เสื้อผ้า ลองจับคู่ทุกแบบ แล้วจัดอันดับชุดที่เข้ากันที่สุดให้ พร้อมภาพชิ้นที่ใช้</p>
+      </article>
+    </div>
+    <p class="privacy">รูปที่อัปโหลดถูกประมวลผลในหน่วยความจำและไม่ถูกบันทึกบนเซิร์ฟเวอร์ ตู้เสื้อผ้าเก็บอยู่ในเบราว์เซอร์ของคุณเท่านั้น ลบได้ทุกเมื่อ</p>
+  </section>
+</main>
+
+<dialog class="closet" id="closetDlg" aria-labelledby="closetTitle">
+  <div class="closet-inner">
+    <div class="closet-head">
+      <h3 id="closetTitle">ตู้เสื้อผ้าของฉัน</h3>
+      <p>รูปที่เคยอัปไว้ เก็บอยู่ในเครื่องนี้เท่านั้น กดที่รูปเพื่อเลือก แล้วกด "ใช้รูปที่เลือก"</p>
+      <button class="closet-x" type="button" id="closeCloset" aria-label="ปิดตู้เสื้อผ้า">×</button>
+    </div>
+    <div class="closet-body"><div class="closet-grid" id="closetGrid"></div></div>
+    <div class="closet-foot">
+      <span class="sel" id="closetSel"></span>
+      <button class="textbtn danger" type="button" id="clearCloset">ล้างตู้</button>
+      <button class="go" type="button" id="useCloset">ใช้รูปที่เลือก</button>
+    </div>
+  </div>
+</dialog>
+
+<footer>
+  <div class="wrap">
+    <p class="big">Fit<br>Check</p>
+    <p>ผลที่ได้เป็นการประเมินจาก AI จากชิ้นเสื้อผ้าที่ตรวจเจอในรูป ใช้เป็นไอเดียแต่งตัว ไม่ใช่คำตัดสินว่าใครแต่งถูกหรือผิด</p>
+    <p>AI วิเคราะห์เฉพาะเสื้อผ้า ไม่ประเมินรูปร่างหรือหน้าตา</p>
+  </div>
+</footer>
+
+<script>
+const MAX_FILES = 12;
+
+const TH = {
+  Tube_top: "เกาะอก", baby_tee: "เบบี้ที", long_sleeve: "เสื้อแขนยาว", puff_sleeve_top: "เสื้อแขนตุ๊กตา",
+  short_sleeve_top: "เสื้อแขนสั้น", "tank-top": "เสื้อกล้าม",
+  baggy_pants: "กางเกงทรงหลวม", long_pants: "กางเกงขายาว", long_skirt: "กระโปรงยาว",
+  low_rise_jeans: "ยีนส์เอวต่ำ", low_rise_pants: "กางเกงเอวต่ำ", mini_pants: "กางเกงขาสั้น", mini_skirt: "กระโปรงสั้น",
+  long_dress: "เดรสยาว", mini_dress: "เดรสสั้น", suit_jacket: "เสื้อสูท"
+};
+const CAT_TH = { top: "ท่อนบน", bottom: "ท่อนล่าง", one_piece: "ชุดชิ้นเดียว", outer: "เสื้อคลุม" };
+
+// หน้าตา/คำอธิบายของแต่ละสไตล์ (รายชื่อชิ้นมาจาก /api/styles ซึ่งตรงกับ STYLES ใน fitcheck.py)
+const STYLE_META = {
+  Cleangirl:  { bg: "#DFE8D0", fg: "#17142B", r: "-4deg", fs: "1.7rem", th: "คลีนเกิร์ล",
+    tag: "เรียบ สะอาด ดูแพงแบบไม่ต้องพยายาม",
+    about: "ลุคที่ดูเหมือนไม่ได้ตั้งใจแต่งแต่ดูดีทุกมุม เน้นสีกลาง ๆ อย่างขาว ครีม เบจ ชิ้นน้อยแต่ทรงสวย ใส่แล้วดูสะอาดสะอ้าน เหมาะกับทุกวัน",
+    recipe: "เสื้อกล้ามหรือเสื้อแขนสั้น + กางเกงขายาว แล้วคลุมสูทเบา ๆ",
+    art: [{ cls: "tank-top", c: "#FFFFFF" }, { cls: "long_pants", c: "#D9C7A6" }, { cls: "suit_jacket", c: "#B5A586", side: true }] },
+  Formal:     { bg: "#17142B", fg: "#FFFFFF", r: "3deg", fs: "1.3rem", th: "ฟอร์มอล",
+    tag: "เป็นทางการ เรียบร้อย พร้อมเข้าประชุม",
+    about: "แต่งให้ดูน่าเชื่อถือ ทรงชัด ผ้าอยู่ตัว สูทกับกางเกงขายาวคือคู่หลัก ถ้าอยากให้หวานขึ้นก็เปลี่ยนเป็นเดรสยาวหรือกระโปรงยาว เหมาะกับวันทำงาน สัมภาษณ์งาน หรืองานพิธี",
+    recipe: "สูท + กางเกงขายาว หรือจะเป็นเดรสยาว / กระโปรงยาวก็ได้",
+    art: [{ cls: "suit_jacket", c: "#ECE5D3" }, { cls: "long_pants", c: "#ECE5D3" }] },
+  Hyperpop:   { bg: "#FF5BAA", fg: "#17142B", r: "-2deg", fs: "2rem", th: "ไฮเปอร์ป๊อป",
+    tag: "จัดจ้าน ชิ้นเล็ก สีสันกล้า",
+    about: "สนุก สีจัด เล่นใหญ่ ใช้ชิ้นเล็กอย่างเบบี้ทีหรือเกาะอก จับคู่กับกระโปรงสั้นหรือกางเกงขาสั้น ยิ่งสีตัดกันยิ่งดี ไม่ต้องกลัวว่าจะเยอะเกิน",
+    recipe: "เบบี้ทีหรือเกาะอก + กระโปรงสั้นหรือกางเกงขาสั้น เล่นของชิ้นเล็กให้สุด",
+    art: [{ cls: "baby_tee", c: "#CFFF3D" }, { cls: "mini_skirt", c: "#3A2BFF" }] },
+  Softgirl:   { bg: "#D9CCFF", fg: "#17142B", r: "4deg", fs: "1.5rem", th: "ซอฟต์เกิร์ล",
+    tag: "หวาน นุ่ม ละมุน",
+    about: "โทนพาสเทล ผ้าพลิ้ว รายละเอียดหวาน ๆ อย่างแขนตุ๊กตา โบว์ หรือลูกไม้ ใส่แล้วดูอ่อนโยน เหมาะกับวันเดินคาเฟ่หรือวันที่อยากถ่ายรูปสวย ๆ",
+    recipe: "เสื้อแขนตุ๊กตา + กระโปรงยาว หรือเดรสสั้นเบา ๆ",
+    art: [{ cls: "puff_sleeve_top", c: "#FFFFFF" }, { cls: "long_skirt", c: "#FFB3CF" }] },
+  Streetwear: { bg: "#FF7A2F", fg: "#17142B", r: "-3deg", fs: "1.8rem", th: "สตรีทแวร์",
+    tag: "ทรงหลวม สบาย สายสตรีท",
+    about: "ใส่สบาย ทรงใหญ่ ได้แรงบันดาลใจจากวัฒนธรรมสเกตบอร์ดและฮิปฮอป เสื้อเรียบ ๆ หรือมีกราฟิก กางเกงทรงหลวม ปิดท้ายด้วยรองเท้าผ้าใบคู่โปรด",
+    recipe: "กางเกงทรงหลวม + เสื้อแขนสั้น เสื้อกล้าม หรือเสื้อแขนยาว",
+    art: [{ cls: "short_sleeve_top", c: "#FFFFFF" }, { cls: "baggy_pants", c: "#34343F" }] },
+  Y2K:        { bg: "#3A2BFF", fg: "#FFFFFF", r: "2deg", fs: "2.2rem", th: "วายทูเค",
+    tag: "เอวต่ำ ชิ้นสั้น กลิ่นอายยุค 2000",
+    about: "ย้อนกลับไปต้นยุค 2000 เอวต่ำ เสื้อครอป สีสดใส ยีนส์สีอ่อนคือหัวใจของลุค เติมกิ๊บติดผม แว่นกันแดดทรงเล็ก และกระเป๋าใบจิ๋ว",
+    recipe: "ยีนส์หรือกางเกงเอวต่ำ + เบบี้ที เกาะอก หรือกระโปรงสั้น",
+    art: [{ cls: "baby_tee", c: "#FF9FD0" }, { cls: "low_rise_jeans", c: "#A3C4FF" }] }
+};
+const TAGLINE = Object.fromEntries(Object.entries(STYLE_META).map(([k, v]) => [k, v.tag]));
+
+const $ = (s) => document.querySelector(s);
+const state = { items: [], ref: null, refMode: "none" };   // items/ref: { file, url }
+
+function el(tag, props = {}, ...kids) {
+  const n = document.createElement(tag);
+  for (const [k, v] of Object.entries(props)) {
+    if (v == null || v === false) continue;
+    if (k === "class") n.className = v;
+    else if (k.startsWith("on")) n.addEventListener(k.slice(2), v);
+    else n.setAttribute(k, v);
+  }
+  for (const kid of kids.flat()) {
+    if (kid == null || kid === false) continue;
+    n.append(kid.nodeType ? kid : document.createTextNode(kid));
+  }
+  return n;
+}
+const pct = (x) => Math.round(x * 100) + "%";
+
+/* ---------------- helpers ---------------- */
+function styleVars(name) {
+  const m = STYLE_META[name] || { bg: "#fff", fg: "#17142B" };
+  return `--bg:${m.bg};--fg:${m.fg}`;
+}
+function jumpToStyle(name) {
+  const t = document.getElementById("style-" + name);
+  if (!t) return;
+  t.scrollIntoView({ behavior: "smooth", block: "start" });
+  t.classList.add("flash");
+  setTimeout(() => t.classList.remove("flash"), 1800);
+}
+Object.keys(STYLE_META).forEach((name) => {
+  const m = STYLE_META[name];
+  $("#heroStickers").append(el("button", {
+    class: "stk", type: "button", style: `${styleVars(name)};--r:${m.r};--fs:${m.fs}`,
+    "aria-label": `ดูสไตล์ ${name}`, onclick: () => jumpToStyle(name)
+  }, name));
+});
+(function marquee() {
+  const names = Object.keys(STYLE_META).map((n) => n.toUpperCase());
+  const track = $("#marquee");
+  for (let rep = 0; rep < 2; rep++)               // ซ้ำ 2 ชุดให้วนต่อเนื่อง
+    for (let k = 0; k < 3; k++)
+      names.forEach((n) => track.append(el("span", {}, n + " ✦")));
+})();
+
+/* ---------------- style guide ---------------- */
+// ภาพประกอบแบบ flat lay วาดเอง (ใช้เมื่อยังไม่มีรูปจริงใน static/styles/<สไตล์>/)
+const GARMENT = {
+  short_sleeve_top: { d: "M120,40 Q150,60 180,40 L226,58 L248,102 L216,113 L210,96 L210,176 L90,176 L90,96 L84,113 L52,102 L74,58 Z", x: "M126,44 Q150,62 174,44" },
+  baby_tee:         { d: "M126,46 Q150,62 174,46 L210,60 L222,92 L200,99 L196,88 L198,142 L102,142 L104,88 L100,99 L78,92 L90,60 Z", x: "M131,49 Q150,63 169,49" },
+  long_sleeve:      { d: "M120,40 Q150,60 180,40 L226,58 L252,176 L226,182 L210,104 L210,176 L90,176 L90,104 L74,182 L48,176 L74,58 Z", x: "M126,44 Q150,62 174,44" },
+  puff_sleeve_top:  { d: "M126,50 Q150,64 174,50 L198,60 L198,152 L102,152 L102,60 Z", puffs: true, x: "M141,64 L150,70 L159,64 M150,70 L143,79 M150,70 L157,79" },
+  "tank-top":       { d: "M116,40 L128,40 Q150,78 172,40 L184,40 L190,86 L198,172 L102,172 L110,86 Z", x: "" },
+  Tube_top:         { d: "M100,82 Q150,70 200,82 L198,138 Q150,128 102,138 Z", x: "M104,98 Q150,88 196,98 M104,114 Q150,104 196,114" },
+  suit_jacket:      { d: "M116,40 L150,112 L184,40 L228,58 L250,192 L222,196 L212,112 L212,202 L88,202 L88,112 L78,196 L50,192 L72,58 Z", x: "M116,40 L134,98 L120,92 M184,40 L166,98 L180,92 M150,112 L150,202", buttons: [[150, 140], [150, 166]] },
+  long_pants:       { d: "M100,194 L200,194 L206,399 L160,399 L150,244 L140,399 L94,399 Z", x: "M100,206 L200,206" },
+  baggy_pants:      { d: "M96,194 L204,194 L236,399 L160,399 L150,254 L140,399 L64,399 Z", x: "M96,206 L204,206 M112,206 L108,300 M188,206 L192,300" },
+  low_rise_jeans:   { d: "M98,206 Q150,220 202,206 L208,312 L230,399 L162,399 L150,262 L138,399 L70,399 L92,312 Z", x: "M98,218 Q150,232 202,218 M106,222 Q118,244 136,236 M194,222 Q182,244 164,236", dash: "M150,232 L150,262 M164,399 L168,320 M136,399 L132,320" },
+  low_rise_pants:   { d: "M98,206 Q150,220 202,206 L210,399 L162,399 L150,262 L138,399 L90,399 Z", x: "M98,218 Q150,232 202,218" },
+  mini_pants:       { d: "M100,194 L200,194 L212,282 L158,282 L150,240 L142,282 L88,282 Z", x: "M100,206 L200,206" },
+  mini_skirt:       { d: "M106,194 L194,194 L222,282 L78,282 Z", x: "M106,206 L194,206 M124,206 L114,282 M150,206 L150,282 M176,206 L186,282" },
+  long_skirt:       { d: "M110,194 L190,194 L242,399 L58,399 Z", x: "M110,206 L190,206 M130,206 Q122,300 104,399 M170,206 Q178,300 196,399" },
+  mini_dress:       { d: "M124,44 L132,44 Q150,64 168,44 L176,44 L186,150 L226,290 L74,290 L114,150 Z", x: "M114,150 L186,150" },
+  long_dress:       { d: "M124,44 L132,44 Q150,64 168,44 L176,44 L186,150 L240,399 L60,399 L114,150 Z", x: "M114,150 L186,150" },
+};
+const SVGNS = "http://www.w3.org/2000/svg";
+function svgEl(tag, attrs) {
+  const n = document.createElementNS(SVGNS, tag);
+  for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, v);
+  return n;
+}
+function drawGarment(g, cls, color) {
+  const spec = GARMENT[cls];
+  if (!spec) return;
+  const ink = "#17142B";
+  const shapes = [];
+  if (spec.puffs) shapes.push(["ellipse", { cx: 86, cy: 76, rx: 26, ry: 22 }], ["ellipse", { cx: 214, cy: 76, rx: 26, ry: 22 }]);
+  shapes.push(["path", { d: spec.d }]);
+  shapes.forEach(([tag, a]) => g.append(svgEl(tag, { ...a, fill: ink, transform: "translate(6 6)" })));           // เงาแบบสติ๊กเกอร์
+  shapes.forEach(([tag, a]) => g.append(svgEl(tag, { ...a, fill: color, stroke: ink, "stroke-width": 3, "stroke-linejoin": "round" })));
+  if (spec.x) g.append(svgEl("path", { d: spec.x, fill: "none", stroke: ink, "stroke-width": 2.5, "stroke-linecap": "round", "stroke-linejoin": "round" }));
+  if (spec.dash) g.append(svgEl("path", { d: spec.dash, fill: "none", stroke: ink, "stroke-width": 2, "stroke-dasharray": "5 5", opacity: .55 }));
+  (spec.buttons || []).forEach(([cx, cy]) => g.append(svgEl("circle", { cx, cy, r: 4.5, fill: ink })));
+}
+function styleArt(name, label) {
+  const m = STYLE_META[name];
+  const svg = svgEl("svg", { viewBox: "0 18 300 400", role: "img", "aria-label": label, preserveAspectRatio: "xMidYMid meet" });
+  const main = m.art.filter((a) => !a.side), side = m.art.filter((a) => a.side);
+  if (side.length) svg.setAttribute("viewBox", "-6 18 352 400");
+  const cat = (c) => ({ top: 0, one_piece: 0, outer: 0, bottom: 1 })[CLS_CAT[c]] ?? 0;
+  main.sort((a, b) => cat(a.cls) - cat(b.cls)).forEach((a) => { const g = svgEl("g", {}); drawGarment(g, a.cls, a.c); svg.append(g); });
+  side.forEach((a) => {
+    const g = svgEl("g", { transform: "translate(214 128) rotate(9) scale(.52)" });
+    drawGarment(g, a.cls, a.c); svg.append(g);
+  });
+  return svg;
+}
+const CLS_CAT = {
+  Tube_top: "top", baby_tee: "top", long_sleeve: "top", puff_sleeve_top: "top", short_sleeve_top: "top", "tank-top": "top",
+  baggy_pants: "bottom", long_pants: "bottom", long_skirt: "bottom", low_rise_jeans: "bottom", low_rise_pants: "bottom",
+  mini_pants: "bottom", mini_skirt: "bottom", long_dress: "one_piece", mini_dress: "one_piece", suit_jacket: "outer"
+};
+function artBox(name, photos, label) {
+  const box = el("div", { class: "art", style: styleVars(name) });
+  if (photos && photos.length) box.append(el("img", { src: photos[0], alt: label, loading: "lazy" }));
+  else box.append(styleArt(name, label));
+  return box;
+}
+
+async function loadStyles() {
+  const tiles = $("#styleTiles"), stories = $("#styleStories");
+  let data, photos = {};
+  try {
+    const res = await fetch("/api/styles");
+    if (!res.ok) throw new Error();
+    data = await res.json();
+  } catch {
+    stories.append(el("p", { class: "note wrap" }, "โหลดข้อมูลสไตล์ไม่ได้ ตรวจว่ารัน uvicorn อยู่หรือเปล่า"));
+    return;
+  }
+  try {
+    const res = await fetch("/api/style-images");
+    if (res.ok) photos = await res.json();
+  } catch {}
+
+  Object.entries(data).forEach(([name, items]) => {
+    const m = STYLE_META[name] || { bg: "#fff", fg: "#17142B", tag: "", about: "", recipe: "", th: "", art: [] };
+    const pics = photos[name] || [];
+
+    tiles.append(el("li", {},
+      el("a", { href: "#style-" + name, onclick: (e) => { e.preventDefault(); jumpToStyle(name); } },
+        artBox(name, pics, `ตัวอย่างลุค ${name}`),
+        el("span", {}, name),
+        el("small", {}, m.tag))));
+
+    const art = artBox(name, pics, `ตัวอย่างลุค ${name}: ${m.recipe}`);
+    if (pics.length > 1) art.append(el("div", { class: "extra" },
+      pics.slice(1, 3).map((u) => el("img", { src: u, alt: `ตัวอย่างลุค ${name}`, loading: "lazy" }))));
+
+    stories.append(el("article", { class: pics.length ? "story has-photo" : "story", id: "style-" + name, style: styleVars(name), "aria-labelledby": "st-" + name },
+      el("div", { class: "story-art" }, art),
+      el("div", { class: "story-text" },
+        m.th && el("p", { class: "story-kicker" }, m.th),
+        el("h3", { id: "st-" + name }, name),
+        el("p", { class: "story-tag" }, m.tag),
+        el("p", { class: "story-about" }, m.about),
+        el("h4", {}, "ชิ้นหลักที่ AI มองหา"),
+        el("ul", { class: "pieces", "aria-label": `ชิ้นหลักของ ${name}` },
+          items.map((it) => el("li", { class: it.unique ? "sig" : "" }, (it.unique ? "★ " : "") + (TH[it.cls] || it.cls)))),
+        m.recipe && el("h4", {}, "ลองแต่งแบบนี้"),
+        m.recipe && el("p", { class: "recipe" }, m.recipe),
+        el("a", { class: "go", href: "#try" }, `เช็คว่าชุดของฉันเป็น ${name} ไหม`))));
+  });
+}
+
+/* ---------------- ตู้เสื้อผ้า (เก็บใน IndexedDB ของเบราว์เซอร์) ---------------- */
+// item: { id, blob, url, added, saved, selected, fresh }
+const CLOSET_MAX = 200;
+const closetDB = { ready: null };
+
+function openDB() {
+  if (!closetDB.ready) {
+    closetDB.ready = new Promise((ok, bad) => {
+      try {
+        const r = indexedDB.open("fitcheck", 1);
+        r.onupgradeneeded = () => r.result.createObjectStore("closet", { keyPath: "id" });
+        r.onsuccess = () => ok(r.result);
+        r.onerror = () => bad(r.error);
+      } catch (e) { bad(e); }
+    });
+  }
+  return closetDB.ready;
+}
+async function dbTx(mode, fn) {
+  const db = await openDB();
+  return new Promise((ok, bad) => {
+    const tx = db.transaction("closet", mode);
+    const req = fn(tx.objectStore("closet"));
+    tx.oncomplete = () => ok(req && req.result);
+    tx.onerror = () => bad(tx.error);
+    tx.onabort = () => bad(tx.error);
+  });
+}
+const dbAll = () => dbTx("readonly", (st) => st.getAll());
+const dbPut = (rec) => dbTx("readwrite", (st) => st.put(rec));
+const dbDel = (id) => dbTx("readwrite", (st) => st.delete(id));
+const dbClear = () => dbTx("readwrite", (st) => st.clear());
+
+function lsGet(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : v; } catch { return d; } }
+function lsSet(k, v) { try { localStorage.setItem(k, v); } catch {} }
+
+// ย่อรูปให้ด้านยาวไม่เกิน 1600px ก่อนเก็บ (ประหยัดที่ และส่งไปตรวจได้เร็วขึ้น)
+async function shrink(file) {
+  try {
+    const bmp = await createImageBitmap(file, { imageOrientation: "from-image" });
+    const k = Math.min(1, 1600 / Math.max(bmp.width, bmp.height));
+    const c = document.createElement("canvas");
+    c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k);
+    const ctx = c.getContext("2d");
+    ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, c.width, c.height);   // png โปร่งใส -> พื้นขาว
+    ctx.drawImage(bmp, 0, 0, c.width, c.height);
+    const blob = await new Promise((r) => c.toBlob(r, "image/jpeg", 0.9));
+    return blob || file;
+  } catch { return file; }
+}
+
+const selectedItems = () => state.items.filter((it) => it.selected);
+const savedItems = () => state.items.filter((it) => it.saved);
+let hintTimer = null;
+function closetHint(msg) {
+  const h = $("#closetHint");
+  h.textContent = msg;
+  clearTimeout(hintTimer);
+  hintTimer = setTimeout(() => { h.textContent = ""; }, 4000);
+}
+
+async function addFiles(list) {
+  const files = [...list].filter((f) => f.type.startsWith("image/"));
+  if (!files.length) return;
+  const save = $("#saveToggle").checked && closetDB.ok;
+  let full = 0, notSaved = 0;
+  for (const f of files) {
+    if (selectedItems().length >= MAX_FILES) { full++; continue; }
+    const blob = await shrink(f);
+    const it = {
+      id: (crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random())),
+      blob, url: URL.createObjectURL(blob), added: Date.now(), saved: false, selected: true,
+    };
+    state.items.unshift(it);
+    if (save && savedItems().length < CLOSET_MAX) {
+      try { await dbPut({ id: it.id, blob: it.blob, added: it.added }); it.saved = true; }
+      catch { notSaved++; }
+    } else if (save) notSaved++;
+  }
+  if (full) closetHint(`ใช้ได้ครั้งละ ${MAX_FILES} รูป อีก ${full} รูปไม่ได้ถูกเพิ่ม`);
+  else if (notSaved) closetHint("เก็บลงตู้ไม่สำเร็จบางรูป (ตู้เต็มหรือที่เก็บในเบราว์เซอร์เต็ม) แต่ยังใช้รอบนี้ได้");
+  renderTray();
+}
+
+// × ในช่องหลัก = เอาออกจากรอบนี้ (รูปในตู้ยังอยู่) / รูปที่ไม่ได้เก็บ = ทิ้งไปเลย
+function dropFromRound(it) {
+  it.selected = false;
+  if (!it.saved) {
+    URL.revokeObjectURL(it.url);
+    state.items = state.items.filter((x) => x !== it);
+  }
+  renderTray();
+}
+
+function renderTray() {
+  const tray = $("#tray");
+  tray.replaceChildren();
+  const input = el("input", { type: "file", accept: "image/*", multiple: "", "aria-label": "เลือกรูป",
+    onchange: (e) => { addFiles(e.target.files); e.target.value = ""; } });
+  tray.append(el("label", { class: "add" },
+    el("span", { class: "plus" }, "+"), el("b", {}, "เพิ่มรูปใหม่"), el("small", {}, "คลิก หรือลากรูปมาวาง"), input));
+
+  selectedItems().forEach((it, i) => {
+    tray.append(el("div", { class: "thumb" },
+      el("img", { src: it.url, alt: `รูปที่ ${i + 1}` }),
+      el("span", { class: "n" }, `รูป ${i + 1}`),
+      el("button", { class: "del", type: "button",
+        "aria-label": it.saved ? `เอารูปที่ ${i + 1} ออกจากรอบนี้ (ยังอยู่ในตู้)` : `ลบรูปที่ ${i + 1}`,
+        title: it.saved ? "เอาออกจากรอบนี้ (ยังอยู่ในตู้)" : "ลบรูปนี้",
+        onclick: () => dropFromRound(it) }, "×")));
+  });
+
+  const sel = selectedItems().length, saved = savedItems().length;
+  $("#roundCount").textContent = sel ? `${sel}/${MAX_FILES} รูป` : "";
+  $("#openCloset").disabled = saved === 0;
+  $("#openCloset").title = saved ? "" : "ยังไม่มีรูปในตู้ รูปที่อัปจะถูกเก็บที่นี่";
+  $("#go").disabled = sel === 0;
+}
+
+/* ---------- หน้าต่างตู้เสื้อผ้า ---------- */
+const draft = new Set();          // id ที่ติ๊กไว้ในหน้าต่าง (ยังไม่ยืนยัน)
+function openCloset() {
+  draft.clear();
+  savedItems().forEach((it) => { if (it.selected) draft.add(it.id); });
+  renderClosetGrid();
+  $("#closetDlg").showModal();
+}
+function renderClosetGrid() {
+  const grid = $("#closetGrid");
+  grid.replaceChildren();
+  const items = savedItems();
+  if (!items.length) grid.append(el("p", { class: "closet-empty" }, "ตู้ว่างแล้ว รูปที่อัปใหม่จะถูกเก็บที่นี่"));
+  const unsavedInRound = selectedItems().filter((x) => !x.saved).length;
+  items.forEach((it) => {
+    const on = draft.has(it.id);
+    grid.append(el("div", { class: "thumb " + (on ? "on" : "off") },
+      el("img", { src: it.url, alt: "" }),
+      el("button", { class: "pick", type: "button", "aria-pressed": String(on),
+        "aria-label": on ? "เลือกอยู่ กดเพื่อไม่ใช้" : "กดเพื่อเลือกรูปนี้",
+        onclick: () => {
+          if (!on && draft.size + unsavedInRound >= MAX_FILES) { $("#closetSel").textContent = `เลือกได้ครั้งละ ${MAX_FILES} รูป`; return; }
+          on ? draft.delete(it.id) : draft.add(it.id);
+          renderClosetGrid();
+        } }),
+      el("span", { class: "check", "aria-hidden": "true" }, on ? "✓" : ""),
+      el("button", { class: "del", type: "button", "aria-label": "ลบรูปนี้ออกจากตู้", title: "ลบออกจากตู้",
+        onclick: async () => {
+          draft.delete(it.id);
+          URL.revokeObjectURL(it.url);
+          state.items = state.items.filter((x) => x !== it);
+          try { await dbDel(it.id); } catch {}
+          renderClosetGrid(); renderTray();
+        } }, "×")));
+  });
+  $("#closetSel").textContent = items.length ? `เลือกแล้ว ${draft.size} รูป` : "";
+  $("#useCloset").textContent = draft.size ? `ใช้รูปที่เลือก (${draft.size})` : "ใช้รูปที่เลือก";
+  $("#clearCloset").hidden = !items.length;
+}
+$("#openCloset").addEventListener("click", openCloset);
+$("#closeCloset").addEventListener("click", () => $("#closetDlg").close());
+$("#closetDlg").addEventListener("click", (e) => { if (e.target === e.currentTarget) e.currentTarget.close(); });
+$("#useCloset").addEventListener("click", () => {
+  savedItems().forEach((it) => { it.selected = draft.has(it.id); });
+  $("#closetDlg").close();
+  renderTray();
+});
+$("#clearCloset").addEventListener("click", async () => {
+  if (!confirm("ลบรูปทั้งหมดในตู้เสื้อผ้าบนเครื่องนี้? ลบแล้วกู้คืนไม่ได้")) return;
+  savedItems().forEach((it) => URL.revokeObjectURL(it.url));
+  state.items = state.items.filter((x) => !x.saved);
+  draft.clear();
+  try { await dbClear(); } catch {}
+  renderClosetGrid(); renderTray();
+});
+
+async function loadCloset() {
+  try {
+    await openDB();
+    closetDB.ok = true;
+    const recs = (await dbAll()).sort((a, b) => b.added - a.added);
+    state.items = recs.map((r) => ({ id: r.id, blob: r.blob, url: URL.createObjectURL(r.blob),
+      added: r.added, saved: true, selected: false }));
+    try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch {}
+  } catch {
+    closetDB.ok = false;
+    const t = $("#saveToggle");
+    t.checked = false; t.disabled = true;
+    t.parentElement.title = "เบราว์เซอร์นี้เก็บรูปไม่ได้ (เช่น โหมดไม่ระบุตัวตน)";
+    closetHint("เบราว์เซอร์นี้เก็บรูปไว้ไม่ได้ รูปจะใช้ได้เฉพาะรอบนี้");
+  }
+  renderTray();
+}
+
+$("#saveToggle").checked = lsGet("fitcheck.save", "1") === "1";
+$("#saveToggle").addEventListener("change", (e) => lsSet("fitcheck.save", e.target.checked ? "1" : "0"));
+
+const tray = $("#tray");
+["dragenter", "dragover"].forEach((ev) => tray.addEventListener(ev, (e) => { e.preventDefault(); tray.classList.add("drag"); }));
+["dragleave", "drop"].forEach((ev) => tray.addEventListener(ev, (e) => { e.preventDefault(); tray.classList.remove("drag"); }));
+tray.addEventListener("drop", (e) => addFiles(e.dataTransfer.files));
+
+$("#conf").addEventListener("input", (e) => { $("#confOut").value = Math.round(e.target.value * 100) + "%"; });
+
+/* ---------------- เรฟ ---------------- */
+function setRefMode(mode) {
+  state.refMode = mode;
+  $("#refPhoto").hidden = mode !== "photo";
+}
+document.querySelectorAll('input[name="refmode"]').forEach((r) =>
+  r.addEventListener("change", (e) => setRefMode(e.target.value)));
+
+function setRef(file) {
+  if (state.ref) URL.revokeObjectURL(state.ref.url);
+  state.ref = file ? { file, url: URL.createObjectURL(file) } : null;
+  renderRef();
+}
+function renderRef() {
+  const box = $("#refDrop");
+  box.replaceChildren();
+  if (state.ref) {
+    box.append(el("div", { class: "thumb" },
+      el("img", { src: state.ref.url, alt: "รูปเรฟ" }),
+      el("span", { class: "n" }, "เรฟ"),
+      el("button", { type: "button", "aria-label": "ลบรูปเรฟ", onclick: () => setRef(null) }, "×")));
+    box.append(el("p", { class: "hint" }, "AI จะจัดชุดจากเสื้อผ้าของคุณให้ใกล้ลุคนี้ที่สุด"));
+  } else {
+    const input = el("input", { type: "file", accept: "image/*", "aria-label": "เลือกรูปเรฟ",
+      onchange: (e) => { const f = e.target.files[0]; if (f && f.type.startsWith("image/")) setRef(f); } });
+    const drop = el("label", { class: "add" },
+      el("span", { class: "plus" }, "+"), el("b", {}, "ใส่รูปเรฟ"), el("small", {}, "1 รูป"), input);
+    ["dragenter", "dragover"].forEach((ev) => drop.addEventListener(ev, (e) => e.preventDefault()));
+    drop.addEventListener("drop", (e) => {
+      e.preventDefault();
+      const f = [...e.dataTransfer.files].find((x) => x.type.startsWith("image/"));
+      if (f) setRef(f);
+    });
+    box.append(drop);
+  }
+}
+/* ---------------- analyze ---------------- */
+$("#go").addEventListener("click", analyze);
+
+function showError(msg) {
+  $("#error").replaceChildren(msg ? el("div", { class: "error" }, msg) : "");
+}
+
+async function analyze() {
+  const btn = $("#go");
+  showError("");
+  btn.disabled = true;
+  btn.textContent = "กำลังจัดลุค…";
+  try {
+    const fd = new FormData();
+    const picked = selectedItems();
+    picked.forEach((it, i) => fd.append("files", it.blob, `photo-${i + 1}.jpg`));
+    if (state.refMode === "photo") {
+      if (!state.ref) throw new Error("ใส่รูปเรฟก่อน หรือเลือก \"ไม่มี ให้ AI เลือก\"");
+      fd.append("ref", state.ref.file, state.ref.file.name);
+    }
+    const conf = $("#conf").value;
+    const res = await fetch(`/api/analyze?conf=${conf}`, { method: "POST", body: fd });
+    if (!res.ok) {
+      let msg = "เช็คไม่สำเร็จ ลองใหม่อีกครั้ง";
+      try { const j = await res.json(); if (typeof j.detail === "string") msg = j.detail; } catch {}
+      throw new Error(msg);
+    }
+    const data = await res.json();
+    const imgs = await Promise.all(picked.map((it) => loadImg(it.url)));
+    const refImg = data.target && data.target.detections && state.ref ? await loadImg(state.ref.url) : null;
+    renderResults(data, imgs, refImg);
+    $("#results").scrollIntoView({ behavior: "smooth", block: "start" });
+  } catch (err) {
+    showError(err.message === "Failed to fetch" ? "เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ ตรวจว่ารัน uvicorn อยู่หรือเปล่า" : err.message);
+  } finally {
+    btn.textContent = "จัดลุค";
+    btn.disabled = selectedItems().length === 0;
+  }
+}
+
+function loadImg(url) {
+  return new Promise((ok, bad) => {
+    const im = new Image();
+    im.onload = () => ok(im);
+    im.onerror = () => bad(new Error("โหลดรูปไม่สำเร็จ"));
+    im.src = url;
+  });
+}
+
+/* ---------------- render results ---------------- */
+function renderResults(data, imgs, refImg) {
+  const root = $("#results");
+  root.hidden = false;
+  root.replaceChildren();
+  const t = data.target;
+
+  if (data.target_note) root.append(el("div", { class: "error" }, data.target_note));
+  if (t) {
+    root.append(el("h3", { class: "part" }, "เรฟของคุณ"));
+    root.append(targetBlock(t, refImg));
+  }
+
+  root.append(el("h3", { class: "part" }, "ที่ตรวจเจอในแต่ละรูป"));
+  const grid = el("div", { class: "outfits" });
+  data.outfits.forEach((o, i) => grid.append(outfitCard(o, i, imgs[i])));
+  root.append(grid);
+
+  root.append(el("h3", { class: "part", style: "margin-top:56px" }, t ? "ชุดที่ใกล้เรฟที่สุด" : "ชุดที่เข้ากันที่สุด"));
+  root.append(mixSection(data, imgs));
+
+  if (data.suggestions && data.suggestions.length) {
+    root.append(el("h3", { class: "part", style: "margin-top:56px" }, "ชิ้นที่ควรหามาเพิ่ม"));
+    root.append(suggestSection(data.suggestions, t));
+  }
+
+  if (data.unknown_classes && data.unknown_classes.length) {
+    root.append(el("p", { class: "hint" }, `คลาสที่ไม่อยู่ใน mapping (ถูกข้าม): ${data.unknown_classes.join(", ")}`));
+  }
+}
+
+function outfitCard(o, i, img) {
+  const shot = el("figure", { class: "shot" }, el("img", { src: img.src, alt: `รูปที่ ${i + 1} พร้อมกรอบที่ตรวจเจอ` }));
+  for (const d of o.detections) {
+    const [x1, y1, x2, y2] = d.box;
+    shot.append(el("div", {
+      class: "box", "data-cat": d.category,
+      style: `left:${x1 * 100}%;top:${y1 * 100}%;width:${(x2 - x1) * 100}%;height:${(y2 - y1) * 100}%`
+    }, el("span", {}, `${TH[d.cls] || d.cls} ${pct(d.conf)}`)));
+  }
+  if (!o.detections.length) shot.append(el("div", { class: "empty-shot" }, "ไม่พบเสื้อผ้าในรูปนี้ ลองถ่ายให้เห็นชัดขึ้น หรือลดความมั่นใจขั้นต่ำในตั้งค่าเพิ่มเติม"));
+
+  const st = o.style;
+  const hasStyle = st.styles.length > 0;
+  const bars = Object.entries(st.scores).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]).slice(0, 4);
+
+  return el("article", { class: "outfit" },
+    el("header", {}, el("h3", {}, `รูปที่ ${i + 1}`)),
+    shot,
+    el("span", { class: `sticker ${hasStyle ? "" : "none"}` }, st.label),
+    hasStyle && el("p", { class: "tagline" }, st.styles.map((s) => TAGLINE[s]).join(" / ")),
+    hasStyle && el("p", { class: "more" }, "ดูสไตล์: ",
+      st.styles.map((s) => el("button", { class: "link", type: "button", onclick: () => jumpToStyle(s) }, s))),
+    bars.length > 0 && el("ul", { class: "bars", "aria-label": "คะแนนแต่ละสไตล์" },
+      bars.map(([name, v]) => el("li", {},
+        el("span", {}, name),
+        el("span", { class: "track" }, el("span", { class: "fill", style: `display:block;width:${v}%` })),
+        el("span", { class: "pct" }, Math.round(v) + "%")))),
+    o.detections.length > 0 && el("ul", { class: "found", "aria-label": "ชิ้นที่ตรวจเจอ" },
+      o.detections.map((d) => el("li", {}, `${CAT_TH[d.category]} · ${TH[d.cls] || d.cls} ${pct(d.conf)}`)))
+  );
+}
+
+const CAT_PLAIN = { top: "ท่อนบน", bottom: "ท่อนล่าง", one_piece: "เดรส" };
+
+function targetBlock(t, refImg) {
+  const pieces = (t.pieces || []).map((c) => TH[c] || c);
+  const goals = t.styles.map((s) => el("span", { class: "goal", style: styleVars(s) }, s));
+  if (t.source === "ref" && refImg) {
+    const card = outfitCard({ detections: t.detections, style: { label: t.label, styles: t.styles, scores: t.scores } }, 0, refImg);
+    card.querySelector("h3").textContent = "รูปเรฟ";
+    return el("div", { class: "target" }, card,
+      el("div", { class: "target-info" },
+        el("h4", {}, `AI มองเรฟนี้เป็น ${t.label}`),
+        el("p", {}, `ในเรฟมี ${pieces.join(" + ")} AI จะให้คะแนนชุดของคุณตามความใกล้ทั้งสไตล์และชิ้นที่ใช้`),
+        el("div", {}, goals)));
+  }
+  return el("div", { class: "target no-photo" },
+    el("div", { class: "target-info" },
+      el("div", {}, goals),
+      el("p", { style: "margin-top:12px" }, `${TAGLINE[t.label] || ""} ชิ้นหลักของสไตล์นี้คือ ${pieces.join(", ")}`)));
+}
+
+function suggestSection(sugs, t) {
+  return el("ul", { class: "sugs" }, sugs.map((sg) => {
+    const cat = CAT_PLAIN[sg.category];
+    let why;
+    if (sg.reason === "missing" && sg.category === "one_piece") why = "หรือจะใส่เดรสชิ้นเดียวแทนก็ได้";
+    else if (sg.reason === "missing") why = t ? `คุณยังไม่มี${cat} ลองหาแบบนี้ให้ได้ลุคใกล้${t.source === "ref" ? "เรฟ" : " " + t.label}` : `คุณยังไม่มี${cat} แบบนี้เข้ากับเสื้อผ้าที่มี`;
+    else why = `${cat}ที่มียังไม่เข้ากับ${t.source === "ref" ? "เรฟ" : " " + t.label} ถ้ามีแบบนี้จะใกล้ขึ้น`;
+    return el("li", { class: "sug" },
+      el("h4", {}, cat),
+      el("p", {}, why),
+      el("ul", {}, sg.classes.map((c) => el("li", {}, TH[c] || c))));
+  }));
+}
+
+function mixSection(data, imgs) {
+  if (!data.mixmatch.length) {
+    return el("p", { class: "note" }, data.suggestions && data.suggestions.length
+      ? "ยังจัดชุดไม่ได้ ต้องมีทั้งท่อนบนและท่อนล่าง (หรือเดรส) ดูชิ้นที่ควรหามาเพิ่มด้านล่าง หรือถ่ายรูปเพิ่มแล้วกดจัดลุคอีกครั้ง"
+      : "ยังจัดชุดไม่ได้ ต้องเจอท่อนบนและท่อนล่าง (หรือเดรส) อย่างน้อยอย่างละชิ้น ลองเพิ่มรูป หรือลดความมั่นใจขั้นต่ำในตั้งค่าเพิ่มเติม");
+  }
+  const list = el("ol", { class: "combos" });
+  data.mixmatch.forEach((c, n) => {
+    const body = c.items.filter((it) => it.category !== "outer").sort(byHeight);
+    const outer = c.items.find((it) => it.category === "outer");
+    const name = (it) => TH[it.cls] || it.cls;
+    const desc = body.map(name).join(" กับ ");
+
+    list.append(el("li", { class: "combo" },
+      el("figure", { class: "look" }, stackCanvas(body, imgs, `ลุคที่ประกอบจาก ${desc}`)),
+      el("div", { class: "verdict" },
+        el("span", { class: "rank" }, `อันดับ ${n + 1}`),
+        el("span", { class: "label" }, c.style.label),
+        ...(c.match != null ? [
+          el("div", { class: "score" }, el("b", {}, c.match + "%"), el("span", {}, data.target.source === "ref" ? "ใกล้เรฟ" : `ใกล้ ${data.target.label}`)),
+          el("div", { class: "meter", role: "img", "aria-label": `ใกล้เป้าหมาย ${c.match} จาก 100` },
+            el("i", { style: `width:${c.match}%` })),
+          el("span", { class: "subscore" }, `ความเข้ากันในชุด ${c.score} · ${c.verdict}`)
+        ] : [
+          el("div", { class: "score" }, el("b", {}, String(c.score)), el("span", {}, c.verdict)),
+          el("div", { class: "meter", role: "img", "aria-label": `คะแนนความเข้ากัน ${c.score} จาก 100` },
+            el("i", { style: `width:${c.score}%` }))
+        ]),
+        el("ul", { class: "parts" },
+          body.map((it) => el("li", {}, name(it), el("span", {}, `จากรูป ${it.outfit + 1}`)))),
+        outer && el("div", { class: "outer-thumb" },
+          cropCanvas(imgs[outer.outfit], outer.box, name(outer)),
+          `คลุมด้วย${name(outer)} · จากรูป ${outer.outfit + 1}`))));
+  });
+  return list;
+}
+
+/* ต่อชิ้นเสื้อผ้าเป็นลุคเต็มตัว: ท่อนบนอยู่บน ท่อนล่างอยู่ล่าง (หรือเดรสชิ้นเดียว)
+   ย่อ/ขยายทุกชิ้นให้กว้างเท่ากัน เพราะแต่ละชิ้นอาจมาจากรูปที่ถ่ายใกล้ไกลต่างกัน */
+const HEIGHT_ORDER = { top: 0, one_piece: 0, bottom: 1 };
+function byHeight(a, b) { return HEIGHT_ORDER[a.category] - HEIGHT_ORDER[b.category]; }
+
+function stackCanvas(items, imgs, label) {
+  const sorted = [...items].sort(byHeight);
+  const parts = sorted.map((it, i) => {
+    const box = [...it.box];
+    const above = sorted[i - 1];
+    // ถ้าเสื้อกับกางเกงมาจากรูปเดียวกันและกรอบซ้อนกัน ตัดส่วนบนของกางเกงออก ไม่ให้ช่วงเอวซ้ำสองรอบ
+    if (above && above.outfit === it.outfit && box[1] < above.box[3]) box[1] = Math.min(above.box[3], box[3] - 0.05);
+    return cropRegion(imgs[it.outfit], box, i === 0 ? 0.01 : 0);
+  });
+  const W = 360;                                   // ความกว้างจริงของภาพ (แสดงผลเล็กกว่านี้)
+  const heights = parts.map((p) => Math.round(p.sh * (W / p.sw)));
+  const c = document.createElement("canvas");
+  c.width = W; c.height = heights.reduce((a, b) => a + b, 0);
+  const ctx = c.getContext("2d");
+  let y = 0;
+  parts.forEach((p, i) => {
+    ctx.drawImage(p.img, p.x, p.y, p.sw, p.sh, 0, y, W, heights[i]);
+    y += heights[i];
+  });
+  c.setAttribute("role", "img");
+  c.setAttribute("aria-label", label);
+  return c;
+}
+
+function cropRegion(img, box, pad) {
+  const W = img.naturalWidth, H = img.naturalHeight;
+  const x = Math.max(0, box[0] - pad) * W, y = Math.max(0, box[1] - pad) * H;
+  const x2 = Math.min(1, box[2] + pad) * W, y2 = Math.min(1, box[3] + pad) * H;
+  return { img, x, y, sw: Math.max(1, x2 - x), sh: Math.max(1, y2 - y) };
+}
+
+function cropCanvas(img, box, label) {
+  const pad = 0.03;
+  const W = img.naturalWidth, H = img.naturalHeight;
+  const x1 = Math.max(0, (box[0] - pad)) * W, y1 = Math.max(0, (box[1] - pad)) * H;
+  const x2 = Math.min(1, (box[2] + pad)) * W, y2 = Math.min(1, (box[3] + pad)) * H;
+  const sw = Math.max(1, x2 - x1), sh = Math.max(1, y2 - y1);
+  const scale = Math.min(1, 320 / sh);
+  const c = document.createElement("canvas");
+  c.width = Math.round(sw * scale); c.height = Math.round(sh * scale);
+  c.getContext("2d").drawImage(img, x1, y1, sw, sh, 0, 0, c.width, c.height);
+  c.setAttribute("role", "img");
+  c.setAttribute("aria-label", label);
+  return c;
+}
+
+loadCloset();
+renderRef();
+loadStyles();
+</script>
+</body>
+</html>
